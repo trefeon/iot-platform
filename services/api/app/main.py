@@ -58,8 +58,13 @@ def verify_cf_access(jwt_token: str):
 
 @app.middleware("http")
 async def cf_access_guard(request: Request, call_next):
-    """Protect control.* subdomains with Cloudflare Access"""
+    """Protect control.* and admin.* subdomains with Cloudflare Access"""
     host = request.headers.get("host", "")
+    
+    # Allow localhost/direct access for testing and internal communication
+    if host in ["localhost:8000", "localhost:8080", "127.0.0.1:8000", "127.0.0.1:8080", "api:8000"]:
+        response = await call_next(request)
+        return response
     
     # Protect only control.* and admin.* (public demo stays open/read-only)
     if host.startswith("control.") or host.startswith("admin."):
