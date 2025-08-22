@@ -3,8 +3,9 @@
 #include <ArduinoJson.h>
 
 // ====== CONFIG ======
-const char* WIFI_SSID = "YOUR_WIFI";
-const char* WIFI_PASS = "YOUR_PASS";
+// TODO: Update these with your actual WiFi credentials
+const char* WIFI_SSID = "YOUR_WIFI_NETWORK_NAME";     // Replace with your WiFi network name
+const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";         // Replace with your WiFi password
 const char* MQTT_HOST = "192.168.123.7"; // Your server's IP address
 const int   MQTT_PORT = 1883;
 const char* MQTT_USER = "devuser";
