@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Platform Control Panel</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .device-card {
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #fafafa;
+        }
+        .device-id {
+            font-weight: bold;
+            color: #2563eb;
+        }
+        .controls {
+            margin-top: 10px;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 5px;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        button.danger {
+            background: #dc2626;
+        }
+        button.danger:hover {
+            background: #b91c1c;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            background: #f0f9ff;
+            border-left: 4px solid #2563eb;
+        }
+        .mqtt-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e5e7eb;
+        }
+        .mqtt-messages {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .connection-status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .connected { background: #dcfce7; color: #166534; }
+        .disconnected { background: #fef2f2; color: #dc2626; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 IoT Platform Control Panel</h1>
+            <p>Cloudflare Zero Trust Protected</p>
+        </div>
+
+        <div class="devices-section">
+            <h2>Connected Devices</h2>
+            <div id="devices-list">
+                <div class="device-card">
+                    <div class="device-id">esp32-01</div>
+                    <div class="controls">
+                        <button onclick="sendCommand('esp32-01', {action: 'led', value: 1})">LED ON</button>
+                        <button onclick="sendCommand('esp32-01', {action: 'led', value: 0})">LED OFF</button>
+                        <button onclick="sendCommand('esp32-01', {action: 'sample_rate', value: 1000})">1s Sample</button>
+                        <button onclick="sendCommand('esp32-01', {action: 'sample_rate', value: 5000})">5s Sample</button>
+                        <button class="danger" onclick="sendCommand('esp32-01', {action: 'restart'})">Restart</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mqtt-section">
+            <h2>Live MQTT Messages</h2>
+            <div class="connection-status disconnected" id="mqtt-status">Disconnected</div>
+            <button onclick="connectMQTT()">Connect to MQTT</button>
+            <button onclick="disconnectMQTT()">Disconnect</button>
+            <div class="mqtt-messages" id="mqtt-messages">
+                Waiting for connection...
+            </div>
+        </div>
+
+        <div class="status" id="status">
+            Ready to send commands
+        </div>
+    </div>
+
+    <script>
+        let mqttClient = null;
+        const statusEl = document.getElementById('status');
+        const mqttStatusEl = document.getElementById('mqtt-status');
+        const mqttMessagesEl = document.getElementById('mqtt-messages');
+
+        // Send command to device via API
+        async function sendCommand(deviceId, command) {
+            try {
+                statusEl.textContent = `Sending command to ${deviceId}...`;
+                statusEl.style.background = '#fffbeb';
+                statusEl.style.borderLeftColor = '#f59e0b';
+
+                const response = await fetch(`/api/commands/${deviceId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(command)
+                });
+
+                if (response.ok) {
+                    statusEl.textContent = `✅ Command sent to ${deviceId}: ${JSON.stringify(command)}`;
+                    statusEl.style.background = '#f0fdf4';
+                    statusEl.style.borderLeftColor = '#22c55e';
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                statusEl.textContent = `❌ Error sending command: ${error.message}`;
+                statusEl.style.background = '#fef2f2';
+                statusEl.style.borderLeftColor = '#ef4444';
+            }
+        }
+
+        // MQTT WebSocket connection
+        function connectMQTT() {
+            try {
+                // Use the current host but switch to WebSocket protocol
+                const wsUrl = `wss://${window.location.host}/mqtt`;
+                mqttClient = new WebSocket(wsUrl, ['mqtt']);
+
+                mqttClient.onopen = function() {
+                    mqttStatusEl.textContent = 'Connected';
+                    mqttStatusEl.className = 'connection-status connected';
+                    addMqttMessage('Connected to MQTT broker');
+                    
+                    // Subscribe to telemetry topics
+                    // Note: This is a basic WebSocket connection, for full MQTT protocol
+                    // you'd want to use a library like MQTT.js
+                };
+
+                mqttClient.onmessage = function(event) {
+                    addMqttMessage(`Received: ${event.data}`);
+                };
+
+                mqttClient.onclose = function() {
+                    mqttStatusEl.textContent = 'Disconnected';
+                    mqttStatusEl.className = 'connection-status disconnected';
+                    addMqttMessage('Disconnected from MQTT broker');
+                };
+
+                mqttClient.onerror = function(error) {
+                    addMqttMessage(`Connection error: ${error}`);
+                };
+
+            } catch (error) {
+                addMqttMessage(`Failed to connect: ${error.message}`);
+            }
+        }
+
+        function disconnectMQTT() {
+            if (mqttClient) {
+                mqttClient.close();
+                mqttClient = null;
+            }
+        }
+
+        function addMqttMessage(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            mqttMessagesEl.innerHTML += `[${timestamp}] ${message}\n`;
+            mqttMessagesEl.scrollTop = mqttMessagesEl.scrollHeight;
+        }
+
+        // Load devices from API
+        async function loadDevices() {
+            try {
+                const response = await fetch('/api/devices');
+                if (response.ok) {
+                    const devices = await response.json();
+                    // Update devices list dynamically
+                    console.log('Devices:', devices);
+                }
+            } catch (error) {
+                console.error('Failed to load devices:', error);
+            }
+        }
+
+        // Initialize
+        loadDevices();
+    </script>
+</body>
+</html>
