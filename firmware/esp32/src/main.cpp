@@ -1,12 +1,11 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
-#include <esp_random.h>
 
 // ====== CONFIG ======
 const char* WIFI_SSID = "YOUR_WIFI";
 const char* WIFI_PASS = "YOUR_PASS";
-const char* MQTT_HOST = "mqtt.trefeon.site"; // Use your Cloudflare tunnel endpoint
+const char* MQTT_HOST = "192.168.123.7"; // Your server's IP address
 const int   MQTT_PORT = 1883;
 const char* MQTT_USER = "devuser";
 const char* MQTT_PASS = "devpass";
