@@ -2,10 +2,14 @@ import os, json, logging
 import paho.mqtt.client as mqtt
 from .deps import get_db
 
+print("=== MQTT_BUS.PY LOADED ===")
+
 MQTT_HOST = os.getenv("MQTT_HOST", "broker")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_USER = os.getenv("MQTT_USER")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
+
+print(f"=== MQTT CONFIG: HOST={MQTT_HOST}, PORT={MQTT_PORT}, USER={MQTT_USER} ===")
 
 _client = None
 _subscriber_client = None
@@ -61,8 +65,10 @@ def on_message(client, userdata, msg):
 
 def start_mqtt_subscriber():
     """Start MQTT subscriber for telemetry data"""
+    print("=== START_MQTT_SUBSCRIBER CALLED ===")
     global _subscriber_client
     if _subscriber_client is None:
+        print("=== CREATING NEW MQTT CLIENT ===")
         _subscriber_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="api-subscriber")
         _subscriber_client.on_connect = on_connect
         _subscriber_client.on_message = on_message
@@ -71,11 +77,16 @@ def start_mqtt_subscriber():
             _subscriber_client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
         
         try:
+            print(f"=== CONNECTING TO {MQTT_HOST}:{MQTT_PORT} ===")
             _subscriber_client.connect(MQTT_HOST, MQTT_PORT, keepalive=60)
             _subscriber_client.loop_start()
             logger.info("MQTT subscriber started")
+            print("=== MQTT SUBSCRIBER LOOP STARTED ===")
         except Exception as e:
             logger.error(f"Failed to start MQTT subscriber: {e}")
+            print(f"=== MQTT SUBSCRIBER FAILED: {e} ===")
+    else:
+        print("=== MQTT CLIENT ALREADY EXISTS ===")
     
     return _subscriber_client
 
