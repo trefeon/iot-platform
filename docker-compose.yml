@@ -1,0 +1,64 @@
+# Simple IoT Platform - Docker Compose
+# Portfolio version with minimal complexity
+
+version: '3.8'
+
+services:
+  # MQTT Broker for IoT communication
+  mqtt:
+    image: eclipse-mosquitto:2
+    container_name: iot-mqtt
+    ports:
+      - "1883:1883"     # MQTT
+      - "9001:9001"     # WebSocket (optional)
+    volumes:
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mqtt_data:/mosquitto/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_pub -h localhost -t test -m 'health check'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # FastAPI Application
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: iot-api
+    ports:
+      - "8000:8000"
+    environment:
+      - MQTT_BROKER=mqtt
+      - MQTT_PORT=1883
+    volumes:
+      - ./data:/app/data  # Persist SQLite database
+    depends_on:
+      - mqtt
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/stats || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Cloudflare Tunnel (for public access)
+  cloudflare:
+    image: cloudflare/cloudflared:latest
+    container_name: iot-tunnel
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    restart: unless-stopped
+    depends_on:
+      - api
+    # No ports exposed - traffic comes through Cloudflare
+
+volumes:
+  mqtt_data:
+    driver: local
+
+networks:
+  default:
+    name: iot-network

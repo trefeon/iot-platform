@@ -1,10 +1,16 @@
+# Simple IoT Platform - Portfolio Project
+
 # Environment files
 .env
 .env.local
 .env.production
 
-# Docker volumes and data
-/data/
+# Database and data
+/data/*.db
+/data/*.sqlite
+/data/*.sqlite3
+
+# Docker
 docker-compose.override.yml
 
 # Logs
@@ -49,35 +55,11 @@ wheels/
 .installed.cfg
 *.egg
 
-# Node.js (if you add frontend later)
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# MQTT broker data (local development)
-services/broker/passwd
-services/broker/data/
-services/broker/log/
-
-# SSL certificates (should be managed separately)
-deploy/certs/*.crt
-deploy/certs/*.key
-deploy/certs/*.pem
-
-# Cloudflared credentials (store outside repo)
-deploy/cloudflare/*.json
-
-# Database dumps
-*.sql.gz
-*.dump
-
-# Grafana data (local development)
-services/observability/grafana/data/
-
-# PlatformIO
-firmware/esp32/.pio/
-firmware/esp32/.vscode/
+# Arduino IDE
+firmware/*.ino.hex
+firmware/*.ino.bin
+firmware/*.ino.elf
+firmware/*.ino.map
 
 # Temporary files
 *.tmp

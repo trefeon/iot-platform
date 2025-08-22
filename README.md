@@ -1,726 +1,177 @@
-# 🚀 IoT Platform - Complete Zero Trust Solution
+# 🌟 Simple IoT Platform - Portfolio Project
 
-A production-ready IoT monitoring platform with ESP32 devices, real-time dashboard, MQTT communication, and enterprise security features.
+A clean, focused IoT monitoring platform designed to showcase full-stack development skills for portfolio presentations.
 
-## 🌟 Features
+## 🎯 What This Project Demonstrates
 
-### Core Platform
-- **Real-time device monitoring** with live telemetry data
-- **ESP32 multi-sensor simulation** (temperature, humidity, pressure, light, motion, power)
-- **MQTT bidirectional communication** for device control and data collection
-- **Web dashboard** with interactive charts and device management
-- **Docker containerized deployment** for easy scaling
-- **Automatic device status detection** (online/offline tracking)
+- **Hardware Integration**: ESP32 with real sensors (DHT22, LDR)
+- **Backend Development**: FastAPI with MQTT and SQLite
+- **Frontend Skills**: Responsive web dashboard with real-time charts
+- **DevOps**: Docker containerization and deployment
+- **Cloud Security**: Cloudflare Zero Trust integration
+- **IoT Protocols**: MQTT for reliable device communication
 
-### Security & Operations
-- **Cloudflare Zero Trust** integration with Access control
-- **Multi-domain routing** (demo, control, admin, mqtt subdomains)
-- **Production deployment** scripts and automation
-- **Monitoring stack** with Prometheus + Grafana
-- **Auto-startup** with systemd service integration
-
-### Device Management
-- **Remote device control** (LED, configuration, restart)
-- **Real sensor integration** support (DHT22, BMP280, BH1750, etc.)
-- **Realistic data simulation** with daily patterns and noise
-- **Multiple ESP32 support** with unique device IDs
-
-## 🏗️ Architecture
-
-```
-ESP32 Devices → WiFi → MQTT Broker → FastAPI → PostgreSQL
-                         ↓              ↓
-                   Device Commands  Web Dashboard
-                                        ↓
-                             Cloudflare Zero Trust
-                                        ↓
-                          demo.domain.com (Public)
-                         control.domain.com (Protected)
-                          admin.domain.com (Protected)
-```
-
-### Services
-- **API**: FastAPI backend with MQTT integration and Cloudflare Access
-- **Database**: PostgreSQL with TimescaleDB for time-series data
-- **MQTT Broker**: Eclipse Mosquitto with authentication
-- **Frontend**: Real-time web interface with Chart.js
-- **Monitoring**: Prometheus + Grafana for metrics and visualization
-- **Security**: Cloudflare Tunnel + Zero Trust Access
-
-## ⚡ Quick Start
-
-### Option 1: Using Docker Compose (Recommended)
-
-```bash
-# Copy environment configuration
-cp config/.env.example .env
-
-# Edit environment with your settings
-# On Windows: notepad .env
-# On Linux: nano .env
-
-# Start development environment
-docker compose -f docker/docker-compose.yml up -d
-
-# Start production environment  
-docker compose -f docker/docker-compose.prod.yml up -d
-```
-
-**Note**: The convenience scripts (`iot.sh` and `iot.ps1`) mentioned in some documentation are not yet implemented. Use the manual Docker Compose commands above.
-
-### Option 2: Manual Setup
+## 🚀 Quick Start
 
 ### 1. Server Setup (Ubuntu)
 ```bash
-# Clone the repository
-git clone https://github.com/trefeon/iot-platform.git
-cd iot-platform
-
-# Copy environment configuration
-cp config/.env.example .env
-
-# Edit environment with your settings
-nano .env
-
-# Start the platform
-docker compose -f docker/docker-compose.yml up -d
+# Download and run setup script
+wget https://raw.githubusercontent.com/yourusername/simple-iot-platform/main/setup.sh
+chmod +x setup.sh
+./setup.sh
 ```
 
-### 2. ESP32 Setup
-### ESP32 Configuration
-Update configuration in `firmware/esp32/src/main.cpp`:
-```cpp
-// ====== CONFIG ======
-const char* WIFI_SSID = "YOUR_WIFI_NETWORK_NAME";    // Replace with your WiFi network name
-const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";        // Replace with your WiFi password
-const char* MQTT_HOST = "192.168.1.100"; // Your server IP
-const char* DEVICE_ID = "esp32-01";      // Unique device identifier
-```
-
-Upload firmware:
+### 2. Deploy the Platform
 ```bash
-cd firmware/esp32
-pio run --target upload
-pio device monitor  # View serial output
+# Clone project
+git clone https://github.com/yourusername/simple-iot-platform.git
+cd simple-iot-platform
+
+# Start services
+docker-compose -f simple-docker-compose.yml up -d
+
+# Check status
+docker-compose -f simple-docker-compose.yml ps
 ```
 
-### 3. Access the Platform
-- **Dashboard**: http://YOUR_SERVER_IP:8080
-- **API**: http://YOUR_SERVER_IP:8080/api
-- **Grafana**: http://YOUR_SERVER_IP:3000
-- **Health Check**: http://YOUR_SERVER_IP:8080/health
+### 3. Configure ESP32
+1. Install Arduino IDE and required libraries:
+   - DHT sensor library (Adafruit)
+   - PubSubClient (Nick O'Leary)
+   - ArduinoJson (Benoit Blanchon)
 
-## 📋 Complete Setup Guide
+2. Open `firmware/esp32-sensor.ino` in Arduino IDE
 
-### Prerequisites
-- Ubuntu Server 20.04 LTS or 22.04 LTS
-- Domain name (for Cloudflare Zero Trust setup)
+3. Update WiFi credentials and server IP in the code
+
+4. Flash to your ESP32 (see `firmware/ESP32_ARDUINO_SETUP.md` for detailed instructions)
+
+### 4. Set up Cloudflare Tunnel (Optional)
+1. Create a Cloudflare account and add your domain
+2. Install cloudflared on your server
+3. Create a tunnel: `cloudflared tunnel create iot-platform`
+4. Configure DNS: `cloudflared tunnel route dns iot-platform portfolio.yourdomain.com`
+5. Update `CLOUDFLARE_TUNNEL_TOKEN` in `.env`
+
+## 📊 Architecture
+
+```
+ESP32 Sensors → WiFi → MQTT Broker → FastAPI → SQLite
+                                        ↓
+                                 Web Dashboard
+                                        ↓
+                             Cloudflare Tunnel
+                                        ↓
+                          portfolio.yourdomain.com
+```
+
+## 🔧 Hardware Requirements
+
+**Minimum Setup:**
 - ESP32 development board
-- Internet connection
+- DHT22 temperature/humidity sensor
+- LDR (Light Dependent Resistor)
+- Breadboard and jumper wires
 
-### Step 1: Ubuntu Server Preparation
+**Wiring:**
+- DHT22 data pin → GPIO 4
+- LDR → GPIO 34 (with pull-down resistor)
+- LED → GPIO 2 (built-in LED)
 
-#### Update System
-```bash
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y curl wget git vim nano htop unzip software-properties-common
-```
+## 📱 Features
 
-#### Install Docker
-```bash
-# Remove old versions
-sudo apt remove docker docker-engine docker.io containerd runc
+- **Real-time Monitoring**: Live sensor data updates every 10 seconds
+- **Historical Data**: SQLite database with automatic retention
+- **Device Management**: Online/offline status tracking
+- **Responsive Design**: Works on desktop and mobile
+- **Remote Control**: Send commands to ESP32 (LED control, restart)
+- **Statistics**: Total readings, 24-hour activity, device count
 
-# Add Docker's official GPG key
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+## 🛠️ Tech Stack
 
-# Add Docker repository
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| Hardware | ESP32 + Sensors | Data collection |
+| Communication | MQTT | Reliable messaging |
+| Backend | FastAPI | REST API and real-time data |
+| Database | SQLite | Simple, embedded storage |
+| Frontend | HTML/JS/Chart.js | Data visualization |
+| Deployment | Docker Compose | Easy deployment |
+| Security | Cloudflare Zero Trust | Secure public access |
 
-# Install Docker
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+## 📈 Why This is Perfect for a Portfolio
 
-# Add user to docker group
-sudo usermod -aG docker $USER
-```
-
-#### Configure Firewall
-```bash
-sudo ufw enable
-sudo ufw allow ssh
-sudo ufw allow 80
-sudo ufw allow 443
-sudo ufw status
-```
-
-### Step 2: Project Setup
-
-#### Create Project Directory
-```bash
-sudo mkdir -p /opt/iot-platform
-sudo chown -R $USER:$USER /opt/iot-platform
-cd /opt/iot-platform
-```
-
-#### Clone and Configure
-```bash
-git clone https://github.com/trefeon/iot-platform.git .
-chmod +x scripts/deploy.sh scripts/maintenance.sh
-
-# Setup environment
-cp config/.env.example .env
-nano .env
-```
-
-#### Environment Configuration
-Update `.env` with your settings:
-```bash
-# Global
-PROJECT_NAME=iot-platform
-TZ=UTC  # Use your timezone (e.g., America/New_York, Europe/London)
-
-# API
-API_PORT=8000
-API_JWT_SECRET=change-me-to-long-random-value
-API_JWT_EXPIRE_MIN=1440
-
-# Database
-POSTGRES_DB=post_db
-POSTGRES_USER=postuser
-POSTGRES_PASSWORD=postpass  # Change in production
-POSTGRES_PORT=5432
-
-# MQTT
-MQTT_HOST=broker  # For docker-compose, use your server IP for ESP32
-MQTT_PORT=1883
-MQTT_USER=devuser
-MQTT_PASSWORD=devpass  # Change in production
-
-# Grafana
-GRAFANA_ADMIN_USER=admin
-GRAFANA_ADMIN_PASSWORD=admin  # Change in production
-
-# Nginx
-NGINX_HTTP_PORT=8080
-
-# Cloudflare Access (for production)
-CF_ACCESS_CERTS=https://your-team.cloudflareaccess.com/cdn-cgi/access/certs
-CF_ACCESS_AUD=your-application-audience-id
-DOMAIN=your-domain.com
-```
-
-### Step 3: Cloudflare Zero Trust Setup
-
-#### Install Cloudflare Tunnel
-```bash
-wget -q https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-sudo dpkg -i cloudflared-linux-amd64.deb
-cloudflared --version
-```
-
-#### Configure Zero Trust
-```bash
-# Automated setup scripts not yet implemented
-# ./scripts/setup-cloudflare.sh your-domain.com
-# ./scripts/setup-access-policies.sh your-domain.com
-
-# Manual configuration required - see Manual Cloudflare Dashboard Setup below
-cloudflared tunnel login
-cloudflared tunnel create iot-platform
-```
-
-#### Manual Cloudflare Dashboard Setup
-1. Go to **Cloudflare Dashboard** → **Zero Trust**
-2. **Access** → **Applications** → **Add application**
-3. Create applications for:
-   - `control.your-domain.com` (Protected)
-   - `admin.your-domain.com` (Protected)
-   - `mqtt.your-domain.com` (Protected)
-4. Set access policies to allow only your email
-5. Copy Application Audience (AUD) tag to `.env`
-
-### Step 4: Deploy Platform
-
-#### Production Deployment
-```bash
-# Deploy with production configuration
-./scripts/deploy.sh prod
-
-# Check service status
-docker compose -f docker/docker-compose.prod.yml ps
-docker compose -f docker/docker-compose.prod.yml logs -f
-```
-
-#### Setup Auto-Startup
-```bash
-# Copy systemd service
-sudo cp config/iot-platform.service /etc/systemd/system/
-
-# Edit service file paths
-sudo nano /etc/systemd/system/iot-platform.service
-
-# Enable and start service
-sudo systemctl enable iot-platform.service
-sudo systemctl start iot-platform.service
-sudo systemctl status iot-platform.service
-```
-
-## 🔧 ESP32 Configuration Guide
-
-### Hardware Requirements
-- **ESP32 Development Board** (ESP32-WROOM-32 or similar)
-- **USB Cable** (for programming and power)
-- **LED** (built-in LED on pin 2 is used)
-
-### Optional Real Sensors
-- **DHT22** - Temperature & Humidity
-- **BMP280** - Temperature, Humidity & Pressure
-- **BH1750** - Light sensor
-- **MQ-135** - Air quality sensor
-- **Soil moisture sensor**
-- **MPU6050** - Accelerometer & Gyroscope
-
-### Software Setup
-
-#### Install PlatformIO
-```bash
-# Install VS Code extension: PlatformIO IDE
-# Or install CLI version:
-pip install platformio
-```
-
-#### Configure and Upload
-```bash
-cd firmware/esp32
-
-# Edit configuration in src/main.cpp
-nano src/main.cpp
-
-# Upload firmware
-pio run --target upload
-pio device monitor
-```
-
-### MQTT Topics and Data Structure
-
-#### Published Topics
-
-**Environmental Data** (`devices/{device_id}/environmental`) - Every 10 seconds:
-```json
-{
-  "temperature": 24.5,      // °C
-  "humidity": 62.0,         // %
-  "pressure": 1013.25,      // hPa
-  "light": 850,             // lux
-  "soil_moisture": 45.0,    // %
-  "air_quality": 50000      // ohms (gas resistance)
-}
-```
-
-**Motion Data** (`devices/{device_id}/motion`) - Every 2 seconds:
-```json
-{
-  "accel_x": 0.02,          // m/s²
-  "accel_y": -0.01,         // m/s²
-  "accel_z": 9.78,          // m/s²
-  "vibration": 9.78,        // magnitude
-  "gyro_x": 0.5,            // degrees/second
-  "gyro_y": -0.3,           // degrees/second
-  "gyro_z": 0.1             // degrees/second
-}
-```
-
-**Power Data** (`devices/{device_id}/power`) - Every 30 seconds:
-```json
-{
-  "battery": 85.5,          // %
-  "charging": false,        // boolean
-  "power_consumption": 1.2, // watts
-  "voltage": 3.28           // volts
-}
-```
-
-**Telemetry Data** (`devices/{device_id}/telemetry`) - Every 5 seconds:
-```json
-{
-  "device_id": "esp32-01",
-  "uptime_ms": 123456,
-  "heap_free": 280000,      // bytes
-  "rssi": -45,              // dBm
-  "wifi_quality": 85,       // %
-  "ip_address": "192.168.1.100",
-  "mac_address": "AA:BB:CC:DD:EE:FF",
-  "cpu_temp": 45.2          // °C
-}
-```
-
-#### Device Commands
-
-**LED Control:**
-```json
-{
-  "action": "led",
-  "value": 1                // 1 = ON, 0 = OFF
-}
-```
-
-**Sensor Reset:**
-```json
-{
-  "action": "reset"
-}
-```
-
-**Configuration Update:**
-```json
-{
-  "action": "config",
-  "temperature": 25.0,      // New base temperature
-  "humidity": 60.0,         // New base humidity
-  "pressure": 1020.0        // New base pressure
-}
-```
-
-**Device Restart:**
-```json
-{
-  "action": "restart"
-}
-```
-
-### Real Sensor Integration
-
-#### DHT22 Temperature/Humidity
-```cpp
-#include <DHT.h>
-#define DHT_PIN 4
-#define DHT_TYPE DHT22
-DHT dht(DHT_PIN, DHT_TYPE);
-
-// In publishEnvironmentalData():
-float temp = dht.readTemperature();
-float humidity = dht.readHumidity();
-```
-
-#### BMP280 Pressure Sensor
-```cpp
-#include <Adafruit_BMP280.h>
-Adafruit_BMP280 bmp;
-
-// In publishEnvironmentalData():
-float pressure = bmp.readPressure() / 100.0; // Convert to hPa
-```
-
-#### BH1750 Light Sensor
-```cpp
-#include <BH1750.h>
-BH1750 lightMeter;
-
-// In publishEnvironmentalData():
-float light = lightMeter.readLightLevel();
-```
+1. **Demonstrates Range**: Shows hardware, software, and cloud skills
+2. **Real-world Application**: Actual IoT use case, not just a demo
+3. **Professional Deployment**: Production-ready with Docker and security
+4. **Scalable Design**: Easy to extend with more sensors/features
+5. **Clean Code**: Well-structured, documented, maintainable
+6. **Modern Stack**: Current technologies employers want to see
 
 ## 🔐 Security Features
 
-### Cloudflare Zero Trust Protection
+- **Cloudflare Zero Trust**: Secure public access without exposing server
+- **MQTT Authentication**: Can be enabled for production use
+- **Docker Isolation**: Services run in isolated containers
+- **Environment Variables**: Sensitive data not hardcoded
 
-#### Access Control Matrix
-| Domain | Access Level | Authentication |
-|--------|-------------|----------------|
-| `demo.your-domain.com` | **Public** | None required |
-| `control.your-domain.com` | **Restricted** | Email-based access |
-| `admin.your-domain.com` | **Restricted** | Email-based access |
-| `mqtt.your-domain.com` | **Restricted** | Email-based access |
+## 📊 API Endpoints
 
-#### Security Policies
-- **Identity Providers**: Google, GitHub, or Email OTP
-- **Access Rules**: Email-based restrictions
-- **Session Management**: Configurable timeout
-- **Device Certificates**: Optional for admin panel
+- `GET /` - Dashboard homepage
+- `GET /api/current` - Current sensor readings
+- `GET /api/history` - Historical data (last 24 hours)
+- `GET /api/devices` - Connected device list
+- `GET /api/stats` - Platform statistics
 
-### Production Security
+## 🎨 Customization Ideas
+
+- Add more sensor types (pressure, CO2, etc.)
+- Implement alerts/notifications
+- Add data export functionality
+- Create mobile app with same API
+- Add machine learning predictions
+- Implement device grouping/locations
+
+## 📝 Environment Variables
+
 ```bash
-# Change default credentials before production deployment
-MQTT_PASSWORD=secure-random-password
-POSTGRES_PASSWORD=secure-random-password
-GRAFANA_ADMIN_PASSWORD=secure-random-password
-API_JWT_SECRET=very-long-random-secret-key-min-32-chars
+# MQTT Configuration
+MQTT_BROKER=mqtt
+MQTT_PORT=1883
 
-# Use TLS/SSL for MQTT (port 8883)
-# Implement device certificates
-# Add OTA (Over-The-Air) update capability
-# Use WPA3 WiFi encryption
+# Cloudflare Tunnel
+CLOUDFLARE_TUNNEL_TOKEN=your_token_here
+
+# Timezone
+TZ=UTC
 ```
 
-## 📊 Project Status
+## 🐛 Troubleshooting
 
-### ✅ Implemented Features
-- Complete Docker containerization (development and production)
-- FastAPI backend with MQTT integration
-- ESP32 firmware with realistic sensor simulation
-- PostgreSQL database with TimescaleDB support
-- Eclipse Mosquitto MQTT broker
-- Prometheus and Grafana monitoring stack
-- Cloudflare Access JWT verification
-- Real-time web dashboard
-- Device command and control
+**ESP32 not connecting to WiFi:**
+- Double-check WiFi credentials
+- Verify ESP32 is in range
+- Check serial monitor for error messages
 
-### 🚧 Partially Implemented
-- Cloudflare Zero Trust configuration (manual setup required)
-- Production deployment scripts (basic deploy.sh exists)
-- Documentation (comprehensive but some referenced scripts missing)
+**No data in dashboard:**
+- Verify MQTT broker is running: `docker-compose logs mqtt`
+- Check ESP32 serial output
+- Ensure firewall allows port 1883
 
-### ⚠️ Not Yet Implemented
-- Convenience scripts (`iot.sh`, `iot.ps1`)
-- Automated Cloudflare setup scripts
-- Test suites (API tests, MQTT tests, E2E tests)
-- Auto-startup scripts (`startup-iot-platform.sh`)
-- Grafana dashboard provisioning
-- Certificate management automation
-
-## 📊 Monitoring and Observability
-
-### Prometheus Metrics
-- Device connectivity status
-- Message throughput
-- System resource usage
-- API response times
-
-### Grafana Dashboards
-- Real-time device telemetry
-- Environmental trends
-- Power consumption analytics
-- Device health monitoring
-
-### Logging
-```bash
-# View service logs
-docker compose logs -f
-
-# Specific service logs
-docker compose logs api
-docker compose logs broker
-docker compose logs db
-
-# ESP32 serial output
-pio device monitor
-```
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-#### ESP32 Connection Problems
-```bash
-# Check WiFi credentials
-# Verify MQTT broker connectivity
-# Monitor serial output for errors
-pio device monitor
-
-# Test MQTT connection
-mosquitto_pub -h YOUR_SERVER_IP -t "test/topic" -m "hello"
-```
-
-#### Docker Issues
-```bash
-# Restart Docker daemon
-sudo systemctl restart docker
-
-# Check container status
-docker compose -f docker/docker-compose.yml ps
-
-# View detailed logs
-docker compose -f docker/docker-compose.yml logs
-
-# Rebuild services
-docker compose -f docker/docker-compose.yml build --no-cache
-docker compose -f docker/docker-compose.yml up -d
-```
-
-#### Database Connection Issues
-```bash
-# Check PostgreSQL container
-docker compose logs db
-
-# Test database connection
-docker compose exec db psql -U iotuser -d iot_platform -c "\dt"
-```
-
-#### MQTT Connection Issues
-```bash
-# Check Mosquitto broker
-docker compose logs broker
-
-# Test MQTT connectivity
-mosquitto_sub -h localhost -p 1883 -t "devices/+/+" -u devuser -P devpass
-```
-
-### Performance Optimization
-
-#### Database Tuning
-```sql
--- Create indexes for time-series queries
-CREATE INDEX IF NOT EXISTS telemetry_device_ts_idx ON telemetry(device_id, ts DESC);
-CREATE INDEX IF NOT EXISTS telemetry_payload_idx ON telemetry USING GIN(payload);
-```
-
-#### MQTT Optimization
-```bash
-# Increase message buffer sizes
-# Configure QoS levels appropriately
-# Use retained messages for device status
-```
-
-## 📁 File Structure
-```
-iot-platform/
-├── config/                     # Configuration files
-│   ├── .env.example           # Environment template
-│   ├── cloudflare-access.env.example
-│   └── iot-platform.service   # Systemd service
-├── docker/                     # Docker configurations
-│   ├── docker-compose.yml     # Development setup
-│   └── docker-compose.prod.yml # Production setup
-├── scripts/                    # Deployment & maintenance
-│   ├── deploy.sh              # Deployment automation
-│   └── maintenance.sh         # Maintenance utilities
-├── services/
-│   ├── api/                    # FastAPI backend
-│   │   ├── app/
-│   │   │   ├── main.py        # Application entry point
-│   │   │   ├── models.py      # Data models
-│   │   │   ├── mqtt_bus.py    # MQTT integration
-│   │   │   ├── routers/       # API endpoints
-│   │   │   └── static/        # Web dashboard
-│   │   ├── Dockerfile
-│   │   └── requirements.txt
-│   ├── broker/                 # MQTT configuration
-│   │   ├── mosquitto.conf
-│   │   ├── passwd
-│   │   └── aclfile
-│   ├── db/                     # Database initialization
-│   │   ├── Dockerfile
-│   │   └── init/00_init.sql
-│   └── observability/          # Monitoring stack
-│       ├── prometheus.yml
-│       └── grafana/
-├── firmware/
-│   └── esp32/                  # ESP32 Arduino code
-│       ├── platformio.ini
-│       └── src/main.cpp
-├── deploy/
-│   ├── nginx/                  # Reverse proxy config
-│   └── cloudflare/            # Zero Trust config
-└── README.md                   # Complete documentation
-```
-
-## 🎯 Production Deployment Checklist
-
-### Pre-Deployment
-- [ ] Domain registered and pointed to server
-- [ ] SSL certificates configured (via Cloudflare)
-- [ ] Environment variables set securely
-- [ ] Database passwords changed from defaults
-- [ ] MQTT credentials configured
-- [ ] Grafana admin password set
-
-### Security
-- [ ] Cloudflare Zero Trust configured
-- [ ] Access policies created for protected subdomains
-- [ ] SSH keys configured (disable password auth)
-- [ ] Firewall rules configured
-- [ ] Regular security updates scheduled
-
-### Monitoring
-- [ ] Prometheus targets configured
-- [ ] Grafana dashboards imported
-- [ ] Alert rules configured
-- [ ] Log aggregation setup
-- [ ] Backup procedures established
-
-### Operations
-- [ ] Auto-startup service enabled
-- [ ] Health checks configured
-- [ ] Maintenance scripts tested
-- [ ] Documentation updated
-- [ ] Team access configured
-
-## 🔄 Development Workflow
-
-### Windows Development Environment
-```powershell
-# Clone the repository
-git clone https://github.com/trefeon/iot-platform.git
-cd iot-platform
-
-# Copy and edit environment file
-copy config\.env.example .env
-notepad .env  # Edit with your settings
-
-# Start development environment
-docker compose -f docker/docker-compose.yml up -d
-
-# View logs
-docker compose logs -f
-```
-
-### Local Development
-```bash
-cd services/api
-pip install -r requirements.txt
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### ESP32 Development
-```bash
-cd firmware/esp32
-pio run
-pio run --target upload
-pio device monitor
-```
-
-### Testing
-```bash
-# API tests (tests directory not yet implemented)
-# pytest services/api/tests/
-
-# MQTT connectivity test (script not yet implemented)  
-# python scripts/test_mqtt.py
-
-# End-to-end test (script not yet implemented)
-# python scripts/test_e2e.py
-
-# Manual testing
-# Test MQTT connection
-docker compose exec broker mosquitto_pub -h localhost -t "test/topic" -m "hello"
-docker compose exec broker mosquitto_sub -h localhost -t "test/topic"
-```
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📞 Support
-
-For issues and questions:
-- **GitHub Issues**: Report bugs and feature requests
-- **Documentation**: Check troubleshooting sections above
-- **Logs**: Review container and device logs
-- **Community**: Join discussions in GitHub Discussions
+**Can't access dashboard:**
+- Check if services are running: `docker-compose ps`
+- Verify port 8000 is open
+- Check application logs: `docker-compose logs api`
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License - feel free to use this for your own portfolio!
 
-## 🙏 Acknowledgments
+## 🤝 Contributing
 
-- **FastAPI** for the excellent web framework
-- **Eclipse Mosquitto** for reliable MQTT messaging
-- **Cloudflare** for Zero Trust security
-- **ESP32** community for hardware support
-- **Docker** for containerization platform
+This is a portfolio project, but suggestions and improvements are welcome!
+
+---
+
+**Built with ❤️ for portfolio demonstration**
+*Showcasing full-stack IoT development skills*

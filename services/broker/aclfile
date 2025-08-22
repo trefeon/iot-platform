@@ -1,4 +1,0 @@
-# Allow a single dev user to publish telemetry for any device and read commands
-user devuser
-topic write devices/+/telemetry
-topic read  devices/+/cmd
