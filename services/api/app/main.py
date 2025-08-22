@@ -6,23 +6,17 @@ import os, jwt, requests, logging
 from .routers import devices, telemetry
 from .mqtt_bus import publish_cmd, start_mqtt_subscriber
 
-print("=== MAIN.PY LOADED ===")
-
 # Cloudflare Access configuration
 CF_CERTS_URL = os.getenv("CF_ACCESS_CERTS", "")
 CF_AUD = os.getenv("CF_ACCESS_AUD", "")
 
-print("=== CREATING FASTAPI APP ===")
 app = FastAPI(title="IoT Platform API")
-print("=== FASTAPI APP CREATED ===")
 
 @app.on_event("startup")
 async def startup():
-    print("=== STARTUP EVENT ===")
     logging.info("Starting MQTT subscriber...")
     start_mqtt_subscriber()
     logging.info("MQTT subscriber started")
-    print("=== MQTT SUBSCRIBER STARTED ===")
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
