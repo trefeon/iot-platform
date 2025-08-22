@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os, jwt, requests, logging
+from contextlib import asynccontextmanager
 from .routers import devices, telemetry
 from .mqtt_bus import publish_cmd, start_mqtt_subscriber
 
@@ -10,12 +11,17 @@ from .mqtt_bus import publish_cmd, start_mqtt_subscriber
 CF_CERTS_URL = os.getenv("CF_ACCESS_CERTS", "")
 CF_AUD = os.getenv("CF_ACCESS_AUD", "")
 
-app = FastAPI(title="IoT Platform API")
-
-# Start MQTT subscriber on startup
-@app.on_event("startup")
-async def startup_event():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    logging.info("Starting MQTT subscriber...")
     start_mqtt_subscriber()
+    logging.info("MQTT subscriber started")
+    yield
+    # Shutdown
+    logging.info("Shutting down...")
+
+app = FastAPI(title="IoT Platform API", lifespan=lifespan)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
