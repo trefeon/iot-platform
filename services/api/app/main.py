@@ -76,6 +76,11 @@ def control_panel():
     """Serve the control panel interface"""
     return FileResponse("app/static/control.html")
 
+@app.get("/admin")
+def admin_panel():
+    """Serve the admin panel interface"""
+    return FileResponse("app/static/admin.html")
+
 @app.get("/mqtt-test")
 def mqtt_test():
     """Serve the MQTT WebSocket test interface"""
@@ -83,7 +88,8 @@ def mqtt_test():
 
 @app.get("/")
 def root():
-    return {"service": "iot-platform-api", "ok": True}
+    """Serve the demo dashboard"""
+    return FileResponse("app/static/index.html")
 
 @app.get("/health")
 def health():
