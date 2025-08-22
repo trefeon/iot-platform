@@ -6,7 +6,7 @@
 set -e
 
 ENVIRONMENT=${1:-dev}
-REPO_URL="YOUR_GITHUB_REPO_URL"  # Replace with your actual repo URL
+REPO_URL="https://github.com/trefeon/iot-platform.git"
 PROJECT_DIR="/opt/iot-platform"
 BRANCH="dev"
 
