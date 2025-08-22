@@ -1,15 +1,14 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
-#include <esp_random.h>
 
 // ====== CONFIG ======
 const char* WIFI_SSID = "YOUR_WIFI";
 const char* WIFI_PASS = "YOUR_PASS";
-const char* MQTT_HOST = "mqtt.trefeon.site"; // Use your Cloudflare tunnel endpoint
+const char* MQTT_HOST = "192.168.123.7"; // Your server's IP address
 const int   MQTT_PORT = 1883;
 const char* MQTT_USER = "devuser";
-const char* MQTT_PASS = "devpass";
+const char* MQTT_PASS = "abi12345";      // Updated to match your .env
 const char* DEVICE_ID = "esp32-01";     // unique per device
 
 // Sensor simulation variables
@@ -63,7 +62,7 @@ void flashActivityLED() {
 
 // Simulate realistic environmental sensor data
 void publishEnvironmentalData() {
-  StaticJsonDocument<512> doc;
+  JsonDocument doc;
   
   // Temperature with daily pattern and noise (18-30°C range)
   float temp = addDailyPattern(baseTemperature, 4.0);
@@ -82,10 +81,10 @@ void publishEnvironmentalData() {
   
   // Light level with day/night cycle (0-1000 lux)
   unsigned long timeOfDay = (millis() / 1000) % 86400;
-  float lightPattern = max(0.0, sin(PI * timeOfDay / 43200.0)); // Day cycle
+  float lightPattern = max(0.0f, (float)sin(PI * timeOfDay / 43200.0)); // Day cycle
   float light = baseLight * lightPattern;
   light = addNoise(light, 50.0);
-  light = max(0.0, light);
+  light = max(0.0f, light);
   doc["light"] = round(light);
   
   // Soil moisture (20-70% range)
@@ -95,13 +94,13 @@ void publishEnvironmentalData() {
   
   // Air quality (gas resistance - higher is better)
   float gasResistance = addNoise(baseGasResistance, 5000.0);
-  gasResistance = max(10000.0, gasResistance);
+  gasResistance = max(10000.0f, gasResistance);
   doc["air_quality"] = round(gasResistance);
   
   char buffer[512];
   size_t len = serializeJson(doc, buffer);
   String topic = String("devices/") + DEVICE_ID + "/environmental";
-  mqtt.publish(topic.c_str(), buffer, len, false);
+  mqtt.publish(topic.c_str(), (uint8_t*)buffer, len, false);
   
   // Flash LED to indicate activity
   flashActivityLED();
@@ -109,7 +108,7 @@ void publishEnvironmentalData() {
 
 // Simulate motion/accelerometer data
 void publishMotionData() {
-  StaticJsonDocument<256> doc;
+  JsonDocument doc;
   
   // Simulate slight vibrations/movements
   float accelX = addNoise(baseAccelX, 0.1);
@@ -132,7 +131,7 @@ void publishMotionData() {
   char buffer[256];
   size_t len = serializeJson(doc, buffer);
   String topic = String("devices/") + DEVICE_ID + "/motion";
-  mqtt.publish(topic.c_str(), buffer, len, false);
+  mqtt.publish(topic.c_str(), (uint8_t*)buffer, len, false);
   
   // Flash LED to indicate activity
   flashActivityLED();
@@ -140,7 +139,7 @@ void publishMotionData() {
 
 // Simulate power and system data
 void publishPowerData() {
-  StaticJsonDocument<256> doc;
+  JsonDocument doc;
   
   // Battery level slowly decreasing with usage spikes
   static float batteryDrain = 0.0;
@@ -163,7 +162,7 @@ void publishPowerData() {
   char buffer[256];
   size_t len = serializeJson(doc, buffer);
   String topic = String("devices/") + DEVICE_ID + "/power";
-  mqtt.publish(topic.c_str(), buffer, len, false);
+  mqtt.publish(topic.c_str(), (uint8_t*)buffer, len, false);
   
   // Flash LED to indicate activity
   flashActivityLED();
@@ -171,7 +170,7 @@ void publishPowerData() {
 
 // Publish basic telemetry data
 void publishTelemetryData() {
-  StaticJsonDocument<256> doc;
+  JsonDocument doc;
   
   doc["device_id"] = DEVICE_ID;
   doc["uptime_ms"] = millis();
@@ -187,7 +186,7 @@ void publishTelemetryData() {
   char buffer[256];
   size_t len = serializeJson(doc, buffer);
   String topic = String("devices/") + DEVICE_ID + "/telemetry";
-  mqtt.publish(topic.c_str(), buffer, len, false);
+  mqtt.publish(topic.c_str(), (uint8_t*)buffer, len, false);
   
   // Flash LED to indicate activity
   flashActivityLED();
@@ -198,7 +197,7 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
   flashActivityLED();
   
   // Enhanced command handler
-  StaticJsonDocument<256> doc;
+  JsonDocument doc;
   DeserializationError err = deserializeJson(doc, payload, length);
   if (!err) {
     const char* action = doc["action"] | "";
@@ -212,14 +211,14 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
       }
       
       // Send acknowledgment
-      StaticJsonDocument<128> ack;
+      JsonDocument ack;
       ack["status"] = "ok";
       ack["action"] = "led";
       ack["value"] = val;
       char ackBuffer[128];
       size_t ackLen = serializeJson(ack, ackBuffer);
       String ackTopic = String("devices/") + DEVICE_ID + "/status";
-      mqtt.publish(ackTopic.c_str(), ackBuffer, ackLen, false);
+      mqtt.publish(ackTopic.c_str(), (uint8_t*)ackBuffer, ackLen, false);
     }
     else if (strcmp(action, "reset") == 0) {
       // Reset sensor baselines
@@ -227,12 +226,12 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
       baseHumidity = 55.0;
       basePressure = 1013.25;
       
-      StaticJsonDocument<128> ack;
+      JsonDocument ack;
       ack["status"] = "reset_complete";
       char ackBuffer[128];
       size_t ackLen = serializeJson(ack, ackBuffer);
       String ackTopic = String("devices/") + DEVICE_ID + "/status";
-      mqtt.publish(ackTopic.c_str(), ackBuffer, ackLen, false);
+      mqtt.publish(ackTopic.c_str(), (uint8_t*)ackBuffer, ackLen, false);
     }
     else if (strcmp(action, "config") == 0) {
       // Update sensor baselines
@@ -240,12 +239,12 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
       if (doc["humidity"]) baseHumidity = doc["humidity"];
       if (doc["pressure"]) basePressure = doc["pressure"];
       
-      StaticJsonDocument<128> ack;
+      JsonDocument ack;
       ack["status"] = "config_updated";
       char ackBuffer[128];
       size_t ackLen = serializeJson(ack, ackBuffer);
       String ackTopic = String("devices/") + DEVICE_ID + "/status";
-      mqtt.publish(ackTopic.c_str(), ackBuffer, ackLen, false);
+      mqtt.publish(ackTopic.c_str(), (uint8_t*)ackBuffer, ackLen, false);
     }
   }
 }
@@ -261,14 +260,14 @@ void mqttConnect() {
       mqtt.subscribe(cmdTopic.c_str(), 1);
       
       // Publish device online status
-      StaticJsonDocument<128> onlineMsg;
+      JsonDocument onlineMsg;
       onlineMsg["device_id"] = DEVICE_ID;
       onlineMsg["status"] = "online";
       onlineMsg["timestamp"] = millis();
       char buffer[128];
       size_t len = serializeJson(onlineMsg, buffer);
       String statusTopic = String("devices/") + DEVICE_ID + "/status";
-      mqtt.publish(statusTopic.c_str(), buffer, len, true); // Retained message
+      mqtt.publish(statusTopic.c_str(), (uint8_t*)buffer, len, true); // Retained message
       
       // Flash LED to indicate connection
       flashActivityLED();
