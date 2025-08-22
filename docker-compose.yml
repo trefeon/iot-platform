@@ -51,7 +51,7 @@ services:
       - prometheus_data:/prometheus
 
   grafana:
-    image: grafana:11.1.4
+    image: grafana/grafana:11.1.4
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}

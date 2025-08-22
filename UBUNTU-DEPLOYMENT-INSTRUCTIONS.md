@@ -3,20 +3,18 @@
 ## Current Status
 ✅ Repository successfully cloned to `/home/trefeon/iot-platform-trefeon`  
 ✅ Environment file created from template  
-❌ Docker permission issue needs resolution  
+✅ Docker permission issue resolved  
+✅ Grafana image issue fixed in docker-compose.yml  
 ❌ Services not yet started  
 
-## Step 1: Fix Docker Permissions
-Run these commands on the Ubuntu server as trefeon user:
+## Step 1: Update Repository (IMPORTANT)
+First, pull the latest changes that fix the Grafana image issue:
 
 ```bash
-# Add trefeon to docker group (requires sudo password)
-sudo usermod -aG docker trefeon
+cd ~/iot-platform-trefeon
 
-# Logout and login again to apply group changes
-# OR restart the SSH session
-exit
-# Then reconnect via SSH
+# Pull latest changes
+git pull origin main
 ```
 
 ## Step 2: Start the IoT Platform
