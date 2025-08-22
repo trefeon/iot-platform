@@ -8,7 +8,6 @@ services:
       TZ: ${TZ}
     volumes:
       - db_data:/var/lib/postgresql/data
-      - ./services/db/init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
@@ -20,10 +19,8 @@ services:
     env_file: .env
     ports:
       - "1883:1883"
-      - "9001:9001"  # WebSocket port
-      # - "8883:8883"  # enable for TLS
+      - "9001:9001"
     volumes:
-      - ./services/broker/mosquitto.conf:/mosquitto/config/mosquitto.conf
       - broker_data:/mosquitto/data
       - broker_log:/mosquitto/log
     restart: unless-stopped
@@ -45,20 +42,16 @@ services:
       - api
     ports:
       - "${NGINX_HTTP_PORT}:80"
-    volumes:
-      - ./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
 
   prometheus:
     image: prom/prometheus:v2.55.1
-    volumes:
-      - ./services/observability/prometheus.yml:/etc/prometheus/prometheus.yml
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
     ports:
       - "9090:9090"
+    volumes:
+      - prometheus_data:/prometheus
 
   grafana:
-    image: grafana/grafana:11.1.4
+    image: grafana:11.1.4
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
@@ -71,4 +64,5 @@ volumes:
   db_data:
   broker_data:
   broker_log:
+  prometheus_data:
   grafana_data:
