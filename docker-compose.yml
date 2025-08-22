@@ -24,14 +24,11 @@ services:
       # - "8883:8883"  # enable for TLS
     volumes:
       - ./services/broker/mosquitto.conf:/mosquitto/config/mosquitto.conf
-      - ./services/broker/aclfile:/mosquitto/config/aclfile
-      - ./services/broker/passwd:/mosquitto/config/passwd
       - broker_data:/mosquitto/data
       - broker_log:/mosquitto/log
     command: >
-      sh -lc 'if [ ! -s /mosquitto/config/passwd ]; then
-                mosquitto_passwd -b -c /mosquitto/config/passwd "${MQTT_USER:-devuser}" "${MQTT_PASSWORD:-devpass}";
-              fi;
+      sh -lc 'mosquitto_passwd -b -c /tmp/passwd "${MQTT_USER:-devuser}" "${MQTT_PASSWORD:-devpass}";
+              cp /tmp/passwd /mosquitto/config/passwd;
               exec /usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf'
 
   api:
