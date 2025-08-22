@@ -14,11 +14,14 @@ CF_AUD = os.getenv("CF_ACCESS_AUD", "")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    print("=== LIFESPAN STARTUP ===")
     logging.info("Starting MQTT subscriber...")
     start_mqtt_subscriber()
     logging.info("MQTT subscriber started")
+    print("=== MQTT SUBSCRIBER STARTED ===")
     yield
     # Shutdown
+    print("=== LIFESPAN SHUTDOWN ===")
     logging.info("Shutting down...")
 
 app = FastAPI(title="IoT Platform API", lifespan=lifespan)
