@@ -210,16 +210,17 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
     if (strcmp(action, "led") == 0) {
       int val = doc["value"] | 0;
       
-      // Set manual LED control mode
-      manualLedControl = true;
-      manualLedState = val;
-      
-      // Immediately set LED state
-      digitalWrite(2, val ? HIGH : LOW);
-      
-      // If turning LED off, ensure ledState is also false to prevent activity flash
-      if (val == 0) {
-        ledState = false;
+      if (val == 1) {
+        // LED ON: Enable activity blinking mode
+        manualLedControl = false;  // Return to automatic activity mode
+        ledState = false;          // Reset current LED state
+        digitalWrite(2, LOW);      // Start with LED off, will blink with activity
+      } else {
+        // LED OFF: Disable LED completely (static off)
+        manualLedControl = true;   // Take manual control
+        manualLedState = 0;        // Set to off
+        ledState = false;          // Disable activity state
+        digitalWrite(2, LOW);      // Turn LED off immediately
       }
       
       // Send acknowledgment
