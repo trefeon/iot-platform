@@ -1,177 +1,155 @@
-# 🌟 Simple IoT Platform - Portfolio Project
+# 🌟 IoT Sensor Platform - Portfolio Project
 
-A clean, focused IoT monitoring platform designed to showcase full-stack development skills for portfolio presentations.
+> A complete IoT monitoring system built with ESP32, FastAPI, and real-time dashboard. Perfect for demonstrating full-stack development skills.
 
-## 🎯 What This Project Demonstrates
+![Dashboard Preview](https://via.placeholder.com/600x300/667eea/ffffff?text=Real-time+IoT+Dashboard)
 
-- **Hardware Integration**: ESP32 with real sensors (DHT22, LDR)
-- **Backend Development**: FastAPI with MQTT and SQLite
-- **Frontend Skills**: Responsive web dashboard with real-time charts
-- **DevOps**: Docker containerization and deployment
-- **Cloud Security**: Cloudflare Zero Trust integration
-- **IoT Protocols**: MQTT for reliable device communication
+## 🎯 **What This Demonstrates**
 
-## 🚀 Quick Start
+✅ **Hardware Integration** - ESP32 with real sensors  
+✅ **Backend Development** - FastAPI + MQTT + SQLite  
+✅ **Frontend Skills** - Responsive dashboard with live charts  
+✅ **DevOps** - Docker containerization  
+✅ **IoT Protocols** - MQTT messaging  
 
-### 1. Server Setup (Ubuntu)
+## 🚀 **Quick Start**
+
+### 1. **Deploy Platform**
 ```bash
-# Download and run setup script
-wget https://raw.githubusercontent.com/yourusername/simple-iot-platform/main/setup.sh
-chmod +x setup.sh
-./setup.sh
+git clone https://github.com/trefeon/iot-platform.git
+cd iot-platform
+docker-compose up -d
 ```
 
-### 2. Deploy the Platform
-```bash
-# Clone project
-git clone https://github.com/yourusername/simple-iot-platform.git
-cd simple-iot-platform
+### 2. **Setup ESP32**
+1. Install Arduino IDE libraries: `DHT sensor library`, `PubSubClient`, `ArduinoJson`
+2. Open `firmware/esp32-sensor.ino` 
+3. Update WiFi credentials and server IP
+4. Flash to ESP32
 
-# Start services
-docker-compose -f simple-docker-compose.yml up -d
+### 3. **View Dashboard**
+- **Local**: http://localhost:8000
+- **Live Demo**: [portfolio.yourdomain.com](http://portfolio.yourdomain.com)
 
-# Check status
-docker-compose -f simple-docker-compose.yml ps
-```
+## 🔧 **Hardware Setup**
 
-### 3. Configure ESP32
-1. Install Arduino IDE and required libraries:
-   - DHT sensor library (Adafruit)
-   - PubSubClient (Nick O'Leary)
-   - ArduinoJson (Benoit Blanchon)
-
-2. Open `firmware/esp32-sensor.ino` in Arduino IDE
-
-3. Update WiFi credentials and server IP in the code
-
-4. Flash to your ESP32 (see `firmware/ESP32_ARDUINO_SETUP.md` for detailed instructions)
-
-### 4. Set up Cloudflare Tunnel (Optional)
-1. Create a Cloudflare account and add your domain
-2. Install cloudflared on your server
-3. Create a tunnel: `cloudflared tunnel create iot-platform`
-4. Configure DNS: `cloudflared tunnel route dns iot-platform portfolio.yourdomain.com`
-5. Update `CLOUDFLARE_TUNNEL_TOKEN` in `.env`
-
-## 📊 Architecture
-
-```
-ESP32 Sensors → WiFi → MQTT Broker → FastAPI → SQLite
-                                        ↓
-                                 Web Dashboard
-                                        ↓
-                             Cloudflare Tunnel
-                                        ↓
-                          portfolio.yourdomain.com
-```
-
-## 🔧 Hardware Requirements
-
-**Minimum Setup:**
+**Components:**
 - ESP32 development board
-- DHT22 temperature/humidity sensor
-- LDR (Light Dependent Resistor)
-- Breadboard and jumper wires
+- DHT22 (temperature/humidity sensor)
+- LDR (light sensor)
+- Breadboard + jumper wires
 
 **Wiring:**
-- DHT22 data pin → GPIO 4
-- LDR → GPIO 34 (with pull-down resistor)
-- LED → GPIO 2 (built-in LED)
-
-## 📱 Features
-
-- **Real-time Monitoring**: Live sensor data updates every 10 seconds
-- **Historical Data**: SQLite database with automatic retention
-- **Device Management**: Online/offline status tracking
-- **Responsive Design**: Works on desktop and mobile
-- **Remote Control**: Send commands to ESP32 (LED control, restart)
-- **Statistics**: Total readings, 24-hour activity, device count
-
-## 🛠️ Tech Stack
-
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| Hardware | ESP32 + Sensors | Data collection |
-| Communication | MQTT | Reliable messaging |
-| Backend | FastAPI | REST API and real-time data |
-| Database | SQLite | Simple, embedded storage |
-| Frontend | HTML/JS/Chart.js | Data visualization |
-| Deployment | Docker Compose | Easy deployment |
-| Security | Cloudflare Zero Trust | Secure public access |
-
-## 📈 Why This is Perfect for a Portfolio
-
-1. **Demonstrates Range**: Shows hardware, software, and cloud skills
-2. **Real-world Application**: Actual IoT use case, not just a demo
-3. **Professional Deployment**: Production-ready with Docker and security
-4. **Scalable Design**: Easy to extend with more sensors/features
-5. **Clean Code**: Well-structured, documented, maintainable
-6. **Modern Stack**: Current technologies employers want to see
-
-## 🔐 Security Features
-
-- **Cloudflare Zero Trust**: Secure public access without exposing server
-- **MQTT Authentication**: Can be enabled for production use
-- **Docker Isolation**: Services run in isolated containers
-- **Environment Variables**: Sensitive data not hardcoded
-
-## 📊 API Endpoints
-
-- `GET /` - Dashboard homepage
-- `GET /api/current` - Current sensor readings
-- `GET /api/history` - Historical data (last 24 hours)
-- `GET /api/devices` - Connected device list
-- `GET /api/stats` - Platform statistics
-
-## 🎨 Customization Ideas
-
-- Add more sensor types (pressure, CO2, etc.)
-- Implement alerts/notifications
-- Add data export functionality
-- Create mobile app with same API
-- Add machine learning predictions
-- Implement device grouping/locations
-
-## 📝 Environment Variables
-
-```bash
-# MQTT Configuration
-MQTT_BROKER=mqtt
-MQTT_PORT=1883
-
-# Cloudflare Tunnel
-CLOUDFLARE_TUNNEL_TOKEN=your_token_here
-
-# Timezone
-TZ=UTC
+```
+ESP32 GPIO 4  → DHT22 Data
+ESP32 GPIO 34 → LDR Signal
+ESP32 3.3V    → Sensors VCC
+ESP32 GND     → Sensors GND
 ```
 
-## 🐛 Troubleshooting
+## 🏗️ **Architecture**
 
-**ESP32 not connecting to WiFi:**
-- Double-check WiFi credentials
-- Verify ESP32 is in range
-- Check serial monitor for error messages
+```
+ESP32 Sensors → WiFi → MQTT → FastAPI → SQLite → Dashboard
+```
 
-**No data in dashboard:**
-- Verify MQTT broker is running: `docker-compose logs mqtt`
-- Check ESP32 serial output
-- Ensure firewall allows port 1883
+**Tech Stack:**
+- **Hardware**: ESP32 + Sensors
+- **Communication**: MQTT
+- **Backend**: Python FastAPI
+- **Database**: SQLite
+- **Frontend**: HTML/JS + Chart.js
+- **Deployment**: Docker Compose
 
-**Can't access dashboard:**
-- Check if services are running: `docker-compose ps`
-- Verify port 8000 is open
-- Check application logs: `docker-compose logs api`
+## 📊 **Features**
 
-## 📄 License
+- 📡 **Real-time monitoring** - Live sensor data every 10 seconds
+- 📈 **Historical charts** - Temperature, humidity, light trends  
+- 📱 **Responsive design** - Works on mobile and desktop
+- 🔧 **Device management** - Online/offline status tracking
+- 🎛️ **Remote control** - LED control, device restart
+- 📊 **Statistics** - Total readings, 24h activity
 
-MIT License - feel free to use this for your own portfolio!
+## 🎨 **ESP32 Arduino IDE Setup**
 
-## 🤝 Contributing
+**Required Libraries:**
+1. **DHT sensor library** (Adafruit)
+2. **PubSubClient** (Nick O'Leary)  
+3. **ArduinoJson** (Benoit Blanchon)
 
-This is a portfolio project, but suggestions and improvements are welcome!
+**Board Configuration:**
+- Board: "ESP32 Dev Module"
+- Upload Speed: "921600"
+- CPU Frequency: "240MHz (WiFi/BT)"
+
+**Upload Process:**
+1. Connect ESP32 via USB
+2. Select correct COM port
+3. Update WiFi credentials in code
+4. Click Upload
+
+## 📁 **Project Structure**
+
+```
+iot-platform/
+├── main.py                 # FastAPI application
+├── docker-compose.yml      # Container orchestration
+├── requirements.txt        # Python dependencies
+├── static/index.html       # Dashboard frontend
+├── firmware/
+│   └── esp32-sensor.ino   # Arduino code
+└── config/
+    └── mosquitto.conf     # MQTT broker config
+```
+
+## 🛠️ **Development**
+
+**Local Development:**
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run API server
+python main.py
+
+# Run MQTT broker (separate terminal)
+docker run -it -p 1883:1883 eclipse-mosquitto:2
+```
+
+**Production Deployment:**
+```bash
+# Ubuntu server setup
+chmod +x setup.sh && ./setup.sh
+
+# Deploy with Docker
+docker-compose up -d
+
+# Check status
+docker-compose ps
+```
+
+## 🔍 **Troubleshooting**
+
+**ESP32 Issues:**
+- ❌ Upload failed → Hold BOOT button while uploading
+- ❌ WiFi not connecting → Check credentials and signal strength
+- ❌ No sensor data → Verify wiring and power supply
+
+**Platform Issues:**
+- ❌ No dashboard → Check `docker-compose ps`, ensure port 8000 is open
+- ❌ No MQTT data → Check broker logs: `docker-compose logs mqtt`
+- ❌ Database errors → Check data directory permissions
+
+## 📄 **Why This Project?**
+
+This IoT platform perfectly demonstrates:
+
+🎯 **Technical Breadth** - Hardware to cloud integration  
+🎯 **Modern Stack** - Current technologies employers want  
+🎯 **Real Functionality** - Not just a demo, actually works  
+🎯 **Professional Quality** - Clean code, documentation, deployment  
+🎯 **Scalable Design** - Easy to extend and maintain  
 
 ---
 
-**Built with ❤️ for portfolio demonstration**
-*Showcasing full-stack IoT development skills*
+**Built for portfolio demonstration** | [Live Demo](http://portfolio.yourdomain.com) | [Source Code](https://github.com/trefeon/iot-platform)
