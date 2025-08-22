@@ -1,4 +1,1 @@
-# Simple IoT Platform Requirements - Portfolio Version
-fastapi==0.104.1
-uvicorn==0.24.0
-paho-mqtt==1.6.1
+flask
