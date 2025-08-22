@@ -26,10 +26,7 @@ services:
       - ./services/broker/mosquitto.conf:/mosquitto/config/mosquitto.conf
       - broker_data:/mosquitto/data
       - broker_log:/mosquitto/log
-    command: >
-      sh -lc 'mosquitto_passwd -b -c /tmp/passwd "${MQTT_USER:-devuser}" "${MQTT_PASSWORD:-devpass}";
-              cp /tmp/passwd /mosquitto/config/passwd;
-              exec /usr/sbin/mosquitto -c /mosquitto/config/mosquitto.conf'
+    restart: unless-stopped
 
   api:
     build: ./services/api
