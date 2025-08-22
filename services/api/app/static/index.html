@@ -181,6 +181,39 @@
             color: #64748b;
         }
 
+        .sensor-details {
+            margin-top: 10px;
+        }
+
+        .sensor-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.9rem;
+        }
+
+        .sensor-row:last-child {
+            border-bottom: none;
+        }
+
+        .sensor-row span:first-child {
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .sensor-row span:last-child {
+            color: #334155;
+            font-weight: 600;
+        }
+
+        .sensor-row i {
+            margin-right: 8px;
+            color: #667eea;
+            width: 16px;
+        }
+
         .controls-section {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -348,6 +381,42 @@
             
             <div class="stat-card">
                 <div class="stat-header">
+                    <i class="fas fa-eye stat-icon"></i>
+                    <div class="stat-title">Light Level</div>
+                </div>
+                <div class="stat-value" id="avgLight">850 lux</div>
+                <div class="stat-change">Good lighting</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i class="fas fa-seedling stat-icon"></i>
+                    <div class="stat-title">Soil Moisture</div>
+                </div>
+                <div class="stat-value" id="avgSoil">45%</div>
+                <div class="stat-change">Optimal level</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i class="fas fa-battery-three-quarters stat-icon"></i>
+                    <div class="stat-title">Avg Battery</div>
+                </div>
+                <div class="stat-value" id="avgBattery">85%</div>
+                <div class="stat-change">Good health</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <i class="fas fa-wind stat-icon"></i>
+                    <div class="stat-title">Air Quality</div>
+                </div>
+                <div class="stat-value" id="avgAirQuality">Good</div>
+                <div class="stat-change">No issues detected</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
                     <i class="fas fa-envelope stat-icon"></i>
                     <div class="stat-title">Messages Today</div>
                 </div>
@@ -362,7 +431,7 @@
             <div class="chart-container">
                 <div class="section-title">
                     <i class="fas fa-chart-line"></i>
-                    Live Sensor Data
+                    Environmental Sensors
                 </div>
                 <canvas id="sensorChart"></canvas>
             </div>
@@ -410,6 +479,60 @@
             </div>
         </div>
 
+        <!-- Additional Sensor Grids -->
+        <div class="main-grid">
+            <!-- Power & Motion Chart -->
+            <div class="chart-container">
+                <div class="section-title">
+                    <i class="fas fa-bolt"></i>
+                    Power & Motion Sensors
+                </div>
+                <canvas id="powerChart"></canvas>
+            </div>
+
+            <!-- Environmental Details Panel -->
+            <div class="devices-panel">
+                <div class="section-title">
+                    <i class="fas fa-leaf"></i>
+                    Environmental Details
+                </div>
+                <div class="sensor-details">
+                    <div class="sensor-row">
+                        <span><i class="fas fa-thermometer-half"></i> Temperature:</span>
+                        <span id="detailTemp">24.5°C</span>
+                    </div>
+                    <div class="sensor-row">
+                        <span><i class="fas fa-tint"></i> Humidity:</span>
+                        <span id="detailHumidity">62%</span>
+                    </div>
+                    <div class="sensor-row">
+                        <span><i class="fas fa-compress-arrows-alt"></i> Pressure:</span>
+                        <span id="detailPressure">1013.2 hPa</span>
+                    </div>
+                    <div class="sensor-row">
+                        <span><i class="fas fa-sun"></i> Light Level:</span>
+                        <span id="detailLight">850 lux</span>
+                    </div>
+                    <div class="sensor-row">
+                        <span><i class="fas fa-seedling"></i> Soil Moisture:</span>
+                        <span id="detailSoil">45%</span>
+                    </div>
+                    <div class="sensor-row">
+                        <span><i class="fas fa-wind"></i> Air Quality:</span>
+                        <span id="detailAir">Good (50k Ω)</span>
+                    </div>
+                    <div class="sensor-row">
+                        <span><i class="fas fa-battery-three-quarters"></i> Battery:</span>
+                        <span id="detailBattery">85%</span>
+                    </div>
+                    <div class="sensor-row">
+                        <span><i class="fas fa-mobile-alt"></i> Motion:</span>
+                        <span id="detailMotion">Stable</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Interactive Controls -->
         <div class="controls-section">
             <div class="section-title">
@@ -426,13 +549,17 @@
                     <i class="fas fa-lightbulb"></i>
                     LED OFF
                 </button>
-                <button class="btn btn-primary" onclick="sendTestCommand('sample_fast')">
-                    <i class="fas fa-tachometer-alt"></i>
-                    Fast Sample
+                <button class="btn btn-primary" onclick="sendTestCommand('config_temp')">
+                    <i class="fas fa-thermometer-half"></i>
+                    Set Temp Base
+                </button>
+                <button class="btn btn-primary" onclick="sendTestCommand('reset_sensors')">
+                    <i class="fas fa-undo"></i>
+                    Reset Sensors
                 </button>
                 <button class="btn btn-danger" onclick="sendTestCommand('restart')">
                     <i class="fas fa-power-off"></i>
-                    Restart All
+                    Restart Device
                 </button>
             </div>
 
@@ -453,7 +580,7 @@
     </div>
 
     <script>
-        // Chart Configuration
+        // Chart Configuration - Environmental Sensors
         const ctx = document.getElementById('sensorChart').getContext('2d');
         const chart = new Chart(ctx, {
             type: 'line',
@@ -462,8 +589,8 @@
                 datasets: [{
                     label: 'Temperature (°C)',
                     data: [],
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
                     tension: 0.4,
                     fill: true
                 }, {
@@ -473,6 +600,22 @@
                     backgroundColor: 'rgba(34, 197, 94, 0.1)',
                     tension: 0.4,
                     fill: true
+                }, {
+                    label: 'Pressure (hPa)',
+                    data: [],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    yAxisID: 'y1'
+                }, {
+                    label: 'Light (lux)',
+                    data: [],
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    yAxisID: 'y2'
                 }]
             },
             options: {
@@ -480,21 +623,100 @@
                 maintainAspectRatio: false,
                 scales: {
                     y: {
-                        beginAtZero: false,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.1)'
-                        }
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: 'Temperature (°C) / Humidity (%)' },
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: false,
+                        position: 'right',
+                        min: 980,
+                        max: 1040
+                    },
+                    y2: {
+                        type: 'linear',
+                        display: false,
+                        position: 'right',
+                        min: 0,
+                        max: 1000
                     },
                     x: {
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.1)'
-                        }
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' }
                     }
                 },
                 plugins: {
-                    legend: {
-                        position: 'top'
+                    legend: { position: 'top' }
+                }
+            }
+        });
+
+        // Power & Motion Chart
+        const powerCtx = document.getElementById('powerChart').getContext('2d');
+        const powerChart = new Chart(powerCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Battery (%)',
+                    data: [],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Power (W)',
+                    data: [],
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    yAxisID: 'y1'
+                }, {
+                    label: 'Vibration (m/s²)',
+                    data: [],
+                    borderColor: '#f97316',
+                    backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    yAxisID: 'y2'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: 'Battery (%)' },
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                        min: 0,
+                        max: 100
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: false,
+                        position: 'right',
+                        min: 0,
+                        max: 5
+                    },
+                    y2: {
+                        type: 'linear',
+                        display: false,
+                        position: 'right',
+                        min: 9,
+                        max: 11
+                    },
+                    x: {
+                        grid: { color: 'rgba(0, 0, 0, 0.1)' }
                     }
+                },
+                plugins: {
+                    legend: { position: 'top' }
                 }
             }
         });
@@ -518,46 +740,138 @@
             mqttConsole.scrollTop = mqttConsole.scrollHeight;
         }
 
+        // Simulate realistic ESP32 sensor data
+        let sensorData = {
+            temperature: 22.5,
+            humidity: 55.0,
+            pressure: 1013.25,
+            light: 500,
+            soilMoisture: 45.0,
+            airQuality: 50000,
+            battery: 85.0,
+            power: 1.2,
+            vibration: 9.8
+        };
+
+        function generateRealisticData() {
+            const now = new Date();
+            const timeOfDay = (now.getHours() * 60 + now.getMinutes()) / (24 * 60); // 0-1 for full day
+            
+            // Temperature with daily pattern
+            const tempPattern = Math.sin(2 * Math.PI * (timeOfDay - 0.25)) * 4; // Peak at 3PM
+            sensorData.temperature = 22.5 + tempPattern + (Math.random() - 0.5) * 2;
+            
+            // Humidity inversely related to temperature
+            sensorData.humidity = 70 - (sensorData.temperature - 22.5) * 1.5 + (Math.random() - 0.5) * 6;
+            sensorData.humidity = Math.max(30, Math.min(80, sensorData.humidity));
+            
+            // Pressure with weather patterns
+            sensorData.pressure = 1013.25 + (Math.random() - 0.5) * 10;
+            
+            // Light with day/night cycle
+            const lightPattern = Math.max(0, Math.sin(Math.PI * timeOfDay)) * 0.8 + 0.2;
+            sensorData.light = lightPattern * 800 + Math.random() * 100;
+            
+            // Soil moisture slowly changing
+            sensorData.soilMoisture += (Math.random() - 0.5) * 0.5;
+            sensorData.soilMoisture = Math.max(20, Math.min(70, sensorData.soilMoisture));
+            
+            // Air quality with some variation
+            sensorData.airQuality = 50000 + (Math.random() - 0.5) * 10000;
+            
+            // Battery slowly draining
+            sensorData.battery -= 0.01 + Math.random() * 0.02;
+            if (sensorData.battery < 20) sensorData.battery = 85; // Simulate recharge
+            
+            // Power consumption
+            sensorData.power = 1.2 + (Math.random() - 0.5) * 0.6;
+            
+            // Vibration with small variations
+            sensorData.vibration = 9.8 + (Math.random() - 0.5) * 0.4;
+            
+            return sensorData;
+        }
+
+        function updateCharts(data) {
+            const now = new Date().toLocaleTimeString();
+            
+            // Update environmental chart
+            if (chart.data.labels.length > 20) {
+                chart.data.labels.shift();
+                chart.data.datasets.forEach(dataset => dataset.data.shift());
+            }
+            chart.data.labels.push(now);
+            chart.data.datasets[0].data.push(data.temperature.toFixed(1));
+            chart.data.datasets[1].data.push(data.humidity.toFixed(1));
+            chart.data.datasets[2].data.push(data.pressure.toFixed(1));
+            chart.data.datasets[3].data.push(data.light.toFixed(0));
+            chart.update('none');
+            
+            // Update power chart
+            if (powerChart.data.labels.length > 20) {
+                powerChart.data.labels.shift();
+                powerChart.data.datasets.forEach(dataset => dataset.data.shift());
+            }
+            powerChart.data.labels.push(now);
+            powerChart.data.datasets[0].data.push(data.battery.toFixed(1));
+            powerChart.data.datasets[1].data.push(data.power.toFixed(1));
+            powerChart.data.datasets[2].data.push(data.vibration.toFixed(1));
+            powerChart.update('none');
+        }
+
+        function updateDisplays(data) {
+            // Update stat cards
+            document.getElementById('avgTemp').textContent = `${data.temperature.toFixed(1)}°C`;
+            document.getElementById('avgHumidity').textContent = `${data.humidity.toFixed(0)}%`;
+            document.getElementById('avgLight').textContent = `${data.light.toFixed(0)} lux`;
+            document.getElementById('avgSoil').textContent = `${data.soilMoisture.toFixed(0)}%`;
+            document.getElementById('avgBattery').textContent = `${data.battery.toFixed(0)}%`;
+            
+            // Air quality assessment
+            const airQualityText = data.airQuality > 40000 ? 'Good' : data.airQuality > 20000 ? 'Fair' : 'Poor';
+            document.getElementById('avgAirQuality').textContent = airQualityText;
+            
+            // Update detail panel
+            document.getElementById('detailTemp').textContent = `${data.temperature.toFixed(1)}°C`;
+            document.getElementById('detailHumidity').textContent = `${data.humidity.toFixed(0)}%`;
+            document.getElementById('detailPressure').textContent = `${data.pressure.toFixed(1)} hPa`;
+            document.getElementById('detailLight').textContent = `${data.light.toFixed(0)} lux`;
+            document.getElementById('detailSoil').textContent = `${data.soilMoisture.toFixed(0)}%`;
+            document.getElementById('detailAir').textContent = `${airQualityText} (${(data.airQuality/1000).toFixed(0)}k Ω)`;
+            document.getElementById('detailBattery').textContent = `${data.battery.toFixed(0)}%`;
+            
+            const motionText = data.vibration > 10.2 ? 'Active' : data.vibration < 9.6 ? 'Low' : 'Stable';
+            document.getElementById('detailMotion').textContent = motionText;
+        }
+
         // Simulate MQTT Connection
         setTimeout(() => {
             updateMqttStatus(true, 'Connected to MQTT broker');
+            addConsoleMessage('ESP32-01: Device online - all sensors active');
             startDataSimulation();
         }, 2000);
 
         // Data Simulation
         function startDataSimulation() {
             setInterval(() => {
-                const now = new Date().toLocaleTimeString();
-                const temp = (20 + Math.random() * 10).toFixed(1);
-                const humidity = (50 + Math.random() * 30).toFixed(0);
-
-                // Update chart
-                if (chart.data.labels.length > 20) {
-                    chart.data.labels.shift();
-                    chart.data.datasets[0].data.shift();
-                    chart.data.datasets[1].data.shift();
-                }
-
-                chart.data.labels.push(now);
-                chart.data.datasets[0].data.push(temp);
-                chart.data.datasets[1].data.push(humidity);
-                chart.update('none');
-
-                // Update stats
-                document.getElementById('avgTemp').textContent = `${temp}°C`;
-                document.getElementById('avgHumidity').textContent = `${humidity}%`;
-
-                // Simulate MQTT message
-                addConsoleMessage(`ESP32-Kitchen: {"temp":${temp},"humidity":${humidity}}`);
-
+                const data = generateRealisticData();
+                updateCharts(data);
+                updateDisplays(data);
+                
+                // Simulate different MQTT topics
+                const topics = ['environmental', 'power', 'motion', 'telemetry'];
+                const topic = topics[Math.floor(Math.random() * topics.length)];
+                
+                addConsoleMessage(`ESP32-01/${topic}: Data updated`);
+                
                 // Update message count
                 const currentCount = parseInt(document.getElementById('messageCount').textContent.replace(',', ''));
                 document.getElementById('messageCount').textContent = (currentCount + 1).toLocaleString();
-
+                
             }, 3000);
         }
 
-        // Control Functions
+        // Enhanced Control Functions
         async function sendTestCommand(action) {
             if (!connected) {
                 addConsoleMessage('Error: Not connected to MQTT');
@@ -567,7 +881,8 @@
             const commands = {
                 led_on: { action: 'led', value: 1 },
                 led_off: { action: 'led', value: 0 },
-                sample_fast: { action: 'sample_rate', value: 1000 },
+                config_temp: { action: 'config', temperature: 25.0 },
+                reset_sensors: { action: 'reset' },
                 restart: { action: 'restart' }
             };
 
@@ -579,11 +894,23 @@
                 
                 // Simulate API call
                 setTimeout(() => {
-                    addConsoleMessage(`✓ Command sent successfully`);
+                    addConsoleMessage(`✓ Command sent to ESP32-01`);
                     
                     // Simulate device response
                     setTimeout(() => {
-                        addConsoleMessage(`ESP32-Kitchen: Command executed - ${action}`);
+                        if (action === 'reset_sensors') {
+                            sensorData = {
+                                temperature: 22.5, humidity: 55.0, pressure: 1013.25,
+                                light: 500, soilMoisture: 45.0, airQuality: 50000,
+                                battery: 85.0, power: 1.2, vibration: 9.8
+                            };
+                            addConsoleMessage(`ESP32-01: Sensors reset to baseline`);
+                        } else if (action === 'config_temp') {
+                            sensorData.temperature = 25.0;
+                            addConsoleMessage(`ESP32-01: Temperature baseline updated`);
+                        } else {
+                            addConsoleMessage(`ESP32-01: Command executed - ${action}`);
+                        }
                     }, 500);
                 }, 200);
 
