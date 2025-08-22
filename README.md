@@ -49,24 +49,31 @@ ESP32 Devices → WiFi → MQTT Broker → FastAPI → PostgreSQL
 
 ## ⚡ Quick Start
 
-### Option 1: Using Convenience Script (Recommended)
+### Option 1: Using Docker Compose (Recommended)
 
 ```bash
-# Linux/macOS
-./iot.sh setup     # Initial setup
-./iot.sh dev       # Start development environment
+# Copy environment configuration
+cp config/.env.example .env
 
-# Windows PowerShell
-.\iot.ps1 setup    # Initial setup
-.\iot.ps1 dev      # Start development environment
+# Edit environment with your settings
+# On Windows: notepad .env
+# On Linux: nano .env
+
+# Start development environment
+docker compose -f docker/docker-compose.yml up -d
+
+# Start production environment  
+docker compose -f docker/docker-compose.prod.yml up -d
 ```
+
+**Note**: The convenience scripts (`iot.sh` and `iot.ps1`) mentioned in some documentation are not yet implemented. Use the manual Docker Compose commands above.
 
 ### Option 2: Manual Setup
 
 ### 1. Server Setup (Ubuntu)
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/iot-platform.git
+git clone https://github.com/trefeon/iot-platform.git
 cd iot-platform
 
 # Copy environment configuration
@@ -80,11 +87,12 @@ docker compose -f docker/docker-compose.yml up -d
 ```
 
 ### 2. ESP32 Setup
+### ESP32 Configuration
 Update configuration in `firmware/esp32/src/main.cpp`:
 ```cpp
-// ====== CHANGE THESE VALUES ======
-const char* WIFI_SSID = "Your_WiFi_Network";
-const char* WIFI_PASS = "Your_WiFi_Password";
+// ====== CONFIG ======
+const char* WIFI_SSID = "YOUR_WIFI_NETWORK_NAME";    // Replace with your WiFi network name
+const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";        // Replace with your WiFi password
 const char* MQTT_HOST = "192.168.1.100"; // Your server IP
 const char* DEVICE_ID = "esp32-01";      // Unique device identifier
 ```
@@ -157,8 +165,8 @@ cd /opt/iot-platform
 
 #### Clone and Configure
 ```bash
-git clone https://github.com/your-org/iot-platform.git .
-chmod +x scripts/deploy.sh scripts/startup-iot-platform.sh scripts/maintenance.sh
+git clone https://github.com/trefeon/iot-platform.git .
+chmod +x scripts/deploy.sh scripts/maintenance.sh
 
 # Setup environment
 cp config/.env.example .env
@@ -168,27 +176,38 @@ nano .env
 #### Environment Configuration
 Update `.env` with your settings:
 ```bash
-# Database
-POSTGRES_PASSWORD=your-secure-db-password
-POSTGRES_USER=iotuser
-POSTGRES_DB=iot_platform
-
-# MQTT
-MQTT_USER=devuser
-MQTT_PASSWORD=your-secure-mqtt-password
-
-# Grafana
-GRAFANA_ADMIN_PASSWORD=your-secure-grafana-password
+# Global
+PROJECT_NAME=iot-platform
+TZ=UTC  # Use your timezone (e.g., America/New_York, Europe/London)
 
 # API
-API_JWT_SECRET=your-very-long-random-secret-key
+API_PORT=8000
+API_JWT_SECRET=change-me-to-long-random-value
+API_JWT_EXPIRE_MIN=1440
 
-# Domain (for Cloudflare setup)
+# Database
+POSTGRES_DB=post_db
+POSTGRES_USER=postuser
+POSTGRES_PASSWORD=postpass  # Change in production
+POSTGRES_PORT=5432
+
+# MQTT
+MQTT_HOST=broker  # For docker-compose, use your server IP for ESP32
+MQTT_PORT=1883
+MQTT_USER=devuser
+MQTT_PASSWORD=devpass  # Change in production
+
+# Grafana
+GRAFANA_ADMIN_USER=admin
+GRAFANA_ADMIN_PASSWORD=admin  # Change in production
+
+# Nginx
+NGINX_HTTP_PORT=8080
+
+# Cloudflare Access (for production)
+CF_ACCESS_CERTS=https://your-team.cloudflareaccess.com/cdn-cgi/access/certs
+CF_ACCESS_AUD=your-application-audience-id
 DOMAIN=your-domain.com
-
-# Cloudflare Access (configured later)
-CF_ACCESS_CERTS=
-CF_ACCESS_AUD=
 ```
 
 ### Step 3: Cloudflare Zero Trust Setup
@@ -202,11 +221,13 @@ cloudflared --version
 
 #### Configure Zero Trust
 ```bash
-# Run automated setup
-./scripts/setup-cloudflare.sh your-domain.com
+# Automated setup scripts not yet implemented
+# ./scripts/setup-cloudflare.sh your-domain.com
+# ./scripts/setup-access-policies.sh your-domain.com
 
-# Configure access policies
-./scripts/setup-access-policies.sh your-domain.com
+# Manual configuration required - see Manual Cloudflare Dashboard Setup below
+cloudflared tunnel login
+cloudflared tunnel create iot-platform
 ```
 
 #### Manual Cloudflare Dashboard Setup
@@ -420,16 +441,43 @@ float light = lightMeter.readLightLevel();
 
 ### Production Security
 ```bash
-# Change default credentials
+# Change default credentials before production deployment
 MQTT_PASSWORD=secure-random-password
 POSTGRES_PASSWORD=secure-random-password
 GRAFANA_ADMIN_PASSWORD=secure-random-password
+API_JWT_SECRET=very-long-random-secret-key-min-32-chars
 
 # Use TLS/SSL for MQTT (port 8883)
 # Implement device certificates
 # Add OTA (Over-The-Air) update capability
 # Use WPA3 WiFi encryption
 ```
+
+## 📊 Project Status
+
+### ✅ Implemented Features
+- Complete Docker containerization (development and production)
+- FastAPI backend with MQTT integration
+- ESP32 firmware with realistic sensor simulation
+- PostgreSQL database with TimescaleDB support
+- Eclipse Mosquitto MQTT broker
+- Prometheus and Grafana monitoring stack
+- Cloudflare Access JWT verification
+- Real-time web dashboard
+- Device command and control
+
+### 🚧 Partially Implemented
+- Cloudflare Zero Trust configuration (manual setup required)
+- Production deployment scripts (basic deploy.sh exists)
+- Documentation (comprehensive but some referenced scripts missing)
+
+### ⚠️ Not Yet Implemented
+- Convenience scripts (`iot.sh`, `iot.ps1`)
+- Automated Cloudflare setup scripts
+- Test suites (API tests, MQTT tests, E2E tests)
+- Auto-startup scripts (`startup-iot-platform.sh`)
+- Grafana dashboard provisioning
+- Certificate management automation
 
 ## 📊 Monitoring and Observability
 
@@ -536,7 +584,6 @@ iot-platform/
 │   └── docker-compose.prod.yml # Production setup
 ├── scripts/                    # Deployment & maintenance
 │   ├── deploy.sh              # Deployment automation
-│   ├── startup-iot-platform.sh # Auto-startup script
 │   └── maintenance.sh         # Maintenance utilities
 ├── services/
 │   ├── api/                    # FastAPI backend
@@ -601,6 +648,23 @@ iot-platform/
 
 ## 🔄 Development Workflow
 
+### Windows Development Environment
+```powershell
+# Clone the repository
+git clone https://github.com/trefeon/iot-platform.git
+cd iot-platform
+
+# Copy and edit environment file
+copy config\.env.example .env
+notepad .env  # Edit with your settings
+
+# Start development environment
+docker compose -f docker/docker-compose.yml up -d
+
+# View logs
+docker compose logs -f
+```
+
 ### Local Development
 ```bash
 cd services/api
@@ -618,14 +682,19 @@ pio device monitor
 
 ### Testing
 ```bash
-# API tests
-pytest services/api/tests/
+# API tests (tests directory not yet implemented)
+# pytest services/api/tests/
 
-# MQTT connectivity test
-python scripts/test_mqtt.py
+# MQTT connectivity test (script not yet implemented)  
+# python scripts/test_mqtt.py
 
-# End-to-end test
-python scripts/test_e2e.py
+# End-to-end test (script not yet implemented)
+# python scripts/test_e2e.py
+
+# Manual testing
+# Test MQTT connection
+docker compose exec broker mosquitto_pub -h localhost -t "test/topic" -m "hello"
+docker compose exec broker mosquitto_sub -h localhost -t "test/topic"
 ```
 
 ## 🤝 Contributing
