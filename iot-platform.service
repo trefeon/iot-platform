@@ -1,0 +1,21 @@
+[Unit]
+Description=IoT Platform Docker Compose Service
+Requires=docker.service
+After=docker.service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=forking
+RemainAfterExit=yes
+User=iotuser
+Group=iotuser
+WorkingDirectory=/opt/iot-platform
+ExecStart=/bin/bash -c 'cd /opt/iot-platform && /usr/bin/docker compose up -d'
+ExecStop=/bin/bash -c 'cd /opt/iot-platform && /usr/bin/docker compose down'
+TimeoutStartSec=300
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
