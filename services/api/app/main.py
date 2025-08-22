@@ -104,6 +104,8 @@ def root(request: Request):
         return FileResponse("app/static/control.html")
     elif host.startswith("admin."):
         return FileResponse("app/static/admin.html")
+    elif host.startswith("mqtt."):
+        return FileResponse("app/static/mqtt-test.html")
     else:
         # Default to demo dashboard for demo.* and localhost
         return FileResponse("app/static/index.html")
