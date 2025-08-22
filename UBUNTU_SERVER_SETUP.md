@@ -248,17 +248,188 @@ cd /opt/iot-platform
 ./deploy.sh dev
 ```
 
-### Check Deployment
+### Check Deployment Status
+
+**Step 1: Verify All Services Are Running**
 ```bash
 # Check all services are running
 docker compose ps
 
-# Should show 5 services: db, broker, api, nginx, prometheus, grafana
-# All should be "Up" or "Up (healthy)"
+# Expected output - all services should show "Up" status:
+# NAME                        STATUS
+# iot-platform-api-1          Up
+# iot-platform-broker-1       Up  
+# iot-platform-db-1           Up (healthy)
+# iot-platform-grafana-1      Up
+# iot-platform-nginx-1        Up
+# iot-platform-prometheus-1   Up
+```
 
-# Check logs if any issues
-docker compose logs api
-docker compose logs broker
+**Step 2: Identify and Fix Missing Services**
+
+If any service is missing from the list, diagnose:
+
+```bash
+# Check recent container activity
+docker ps -a | grep iot-platform
+
+# Look for services with "Exited" status and check their logs
+docker logs iot-platform-[service-name]-1
+
+# Common issues and quick fixes:
+# - broker missing: See "MQTT Broker Container Keeps Crashing" in troubleshooting
+# - nginx missing: Check if it started after broker was ready
+# - api missing: Check database connection and environment variables
+```
+
+**Step 3: Validate Service Health**
+```bash
+# Check logs for errors (no errors should appear)
+docker compose logs api --tail 10
+docker compose logs broker --tail 10
+docker compose logs nginx --tail 10
+
+# If you see errors:
+# - "host not found in upstream": Restart nginx after other services are up
+# - "Connection refused": Check if dependent services are running
+# - "Permission denied": Check file permissions (see troubleshooting)
+```
+
+**Step 4: Test Critical Functionality**
+```bash
+# Test API health endpoint
+curl http://localhost:8080/health
+# Expected: {"status":"healthy","service":"iot-platform-api"}
+
+# Test MQTT broker (should connect without errors)
+echo "Testing MQTT connection..."
+timeout 5s mosquitto_pub -h localhost -p 1883 -t test -m "deployment-test" && echo "✅ MQTT working" || echo "❌ MQTT failed"
+
+# Test web interface routing
+curl -s http://localhost:8080/grafana/api/health | head -n 1
+# Expected: { (JSON response indicating Grafana is accessible)
+```
+
+**Step 5: Verify Cloudflare Tunnel**
+```bash
+# Check cloudflared service status
+sudo systemctl status cloudflared --no-pager
+# Expected: Active: active (running)
+
+# Check tunnel connections
+sudo journalctl -u cloudflared --no-pager -n 5 | grep "Registered tunnel"
+# Expected: Multiple "Registered tunnel connection" messages
+
+# If cloudflared is not active, see "Cloudflared Service Fails to Start" in troubleshooting
+```
+
+**Deployment Validation Checklist:**
+
+- [ ] All 6 Docker services running (`docker compose ps`)
+- [ ] API health check returns 200 OK (`curl localhost:8080/health`)
+- [ ] MQTT broker accepts connections (`mosquitto_pub` test)
+- [ ] Cloudflared tunnel is active (`systemctl status cloudflared`)
+- [ ] No error messages in service logs
+- [ ] Domain resolves to Cloudflare IPs (`nslookup demo.your-domain.com`)
+
+> **⚠️ Important**: If any checklist item fails, refer to the "Common Issues and Fixes" section below before proceeding.
+
+### Quick Validation Script
+
+Create and run this validation script to automatically check your deployment:
+
+```bash
+# Create validation script
+cat > /opt/iot-platform/validate-deployment.sh << 'EOF'
+#!/bin/bash
+
+echo "🔍 IoT Platform Deployment Validation"
+echo "========================================"
+
+# Check if we're in the right directory
+if [ ! -f "docker-compose.yml" ]; then
+    echo "❌ Error: Run this script from /opt/iot-platform directory"
+    exit 1
+fi
+
+ERRORS=0
+
+echo "1. Checking Docker services..."
+RUNNING_SERVICES=$(docker compose ps --services --filter status=running | wc -l)
+EXPECTED_SERVICES=6
+
+if [ "$RUNNING_SERVICES" -eq "$EXPECTED_SERVICES" ]; then
+    echo "   ✅ All $EXPECTED_SERVICES services are running"
+else
+    echo "   ❌ Only $RUNNING_SERVICES/$EXPECTED_SERVICES services running"
+    echo "   Missing services:"
+    docker compose ps --services | while read service; do
+        if ! docker compose ps --services --filter status=running | grep -q "^$service$"; then
+            echo "      - $service"
+        fi
+    done
+    ERRORS=$((ERRORS + 1))
+fi
+
+echo "2. Testing API health..."
+if curl -s http://localhost:8080/health | grep -q "healthy"; then
+    echo "   ✅ API health check passed"
+else
+    echo "   ❌ API health check failed"
+    ERRORS=$((ERRORS + 1))
+fi
+
+echo "3. Testing MQTT broker..."
+if timeout 5s mosquitto_pub -h localhost -p 1883 -t test -m "validation-test" 2>/dev/null; then
+    echo "   ✅ MQTT broker is accessible"
+else
+    echo "   ❌ MQTT broker connection failed"
+    ERRORS=$((ERRORS + 1))
+fi
+
+echo "4. Checking Cloudflare tunnel..."
+if systemctl is-active --quiet cloudflared; then
+    echo "   ✅ Cloudflared service is active"
+else
+    echo "   ❌ Cloudflared service is not running"
+    ERRORS=$((ERRORS + 1))
+fi
+
+echo "5. Checking recent logs for errors..."
+ERROR_COUNT=$(docker compose logs --since=10m 2>&1 | grep -i "error\|failed\|exception" | wc -l)
+if [ "$ERROR_COUNT" -eq 0 ]; then
+    echo "   ✅ No recent errors in logs"
+else
+    echo "   ⚠️ Found $ERROR_COUNT error messages in recent logs"
+    echo "   Run 'docker compose logs' to investigate"
+fi
+
+echo "========================================"
+if [ "$ERRORS" -eq 0 ]; then
+    echo "🎉 Deployment validation PASSED! Your IoT platform is ready."
+    echo ""
+    echo "🌐 Access your platform at:"
+    echo "   - Demo: https://demo.your-domain.com"
+    echo "   - Control: https://control.your-domain.com"
+    echo "   - Admin: https://admin.your-domain.com"
+else
+    echo "❌ Deployment validation FAILED with $ERRORS errors."
+    echo ""
+    echo "🔧 Next steps:"
+    echo "   1. Review the errors above"
+    echo "   2. Check the troubleshooting section in UBUNTU_SERVER_SETUP.md"
+    echo "   3. Run 'docker compose logs [service-name]' for detailed error info"
+    echo "   4. Fix issues and run this script again"
+fi
+
+exit $ERRORS
+EOF
+
+# Make script executable
+chmod +x /opt/iot-platform/validate-deployment.sh
+
+# Run validation
+/opt/iot-platform/validate-deployment.sh
 ```
 
 ---
@@ -471,7 +642,287 @@ const char* DEVICE_ID = "esp32-01";
 
 ---
 
-## 🔧 Troubleshooting Commands
+## � Common Issues and Fixes (Step-by-Step Solutions)
+
+### Issue 1: Cloudflared Service Fails to Start
+
+**Symptoms:**
+```bash
+sudo systemctl status cloudflared
+# Shows: Active: activating (auto-restart) (Result: exit-code)
+```
+
+**Diagnosis:**
+```bash
+sudo journalctl -xeu cloudflared.service --no-pager -n 10
+# Error: Cannot determine default origin certificate path
+```
+
+**Solution:**
+```bash
+# 1. Check if certificate exists in user directory
+ls -la ~/.cloudflared/
+# Should show: cert.pem and [tunnel-id].json
+
+# 2. Copy certificates to system location
+sudo cp ~/.cloudflared/*.json /etc/cloudflared/iot-demo.json
+sudo cp ~/.cloudflared/cert.pem /etc/cloudflared/
+sudo chmod 600 /etc/cloudflared/iot-demo.json /etc/cloudflared/cert.pem
+
+# 3. Update cloudflared config to include origin certificate
+sudo tee /etc/cloudflared/config.yml << 'EOF'
+tunnel: iot-demo
+credentials-file: /etc/cloudflared/iot-demo.json
+origincert: /etc/cloudflared/cert.pem
+
+ingress:
+  - hostname: demo.your-domain.com
+    service: http://localhost:8080
+  - hostname: control.your-domain.com
+    service: http://localhost:8080
+  - hostname: mqtt.your-domain.com
+    service: http://localhost:8080
+  - hostname: admin.your-domain.com
+    service: http://localhost:8080
+  - service: http_status:404
+
+metrics: 0.0.0.0:2000
+EOF
+
+# 4. Restart cloudflared service
+sudo systemctl restart cloudflared.service
+sudo systemctl status cloudflared.service
+```
+
+### Issue 2: MQTT Broker Container Keeps Crashing
+
+**Symptoms:**
+```bash
+docker compose ps
+# broker service missing from list
+docker ps -a | grep broker
+# Shows: Exited (13) or similar error
+```
+
+**Diagnosis:**
+```bash
+docker compose logs broker
+# May show: Error: Duplicate password_file value
+# Or: Error: Unable to open file /mosquitto/config/passwd
+```
+
+**Solution A: Fix Configuration Conflicts**
+```bash
+# 1. Check current mosquitto config
+cat services/broker/mosquitto.conf
+
+# 2. If you see duplicate entries, edit the file:
+nano services/broker/mosquitto.conf
+
+# 3. Ensure config looks like this (no duplicates):
+cat > services/broker/mosquitto.conf << 'EOF'
+persistence true
+persistence_location /mosquitto/data/
+log_dest file /mosquitto/log/mosquitto.log
+
+# Authentication settings (applies to all listeners)
+allow_anonymous false
+password_file /mosquitto/config/passwd
+
+# TCP listener for LAN devices (ESP32, etc.)
+listener 1883
+
+# WebSocket listener for browsers via Cloudflare
+listener 9001
+protocol websockets
+EOF
+```
+
+**Solution B: Fix File Permissions and Mounts**
+```bash
+# 1. Create data directories with proper permissions
+sudo mkdir -p data/mosquitto data/postgres data/grafana
+sudo chown -R $USER:$USER data/
+
+# 2. Remove problematic mounted files if they exist
+rm -f services/broker/passwd services/broker/aclfile
+
+# 3. Simplify docker-compose.yml broker section:
+# Edit docker-compose.yml and ensure broker section looks like:
+```
+```yaml
+  broker:
+    image: eclipse-mosquitto:2
+    env_file: .env
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./services/broker/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - broker_data:/mosquitto/data
+      - broker_log:/mosquitto/log
+    restart: unless-stopped
+```
+```bash
+# 4. For testing, temporarily allow anonymous access:
+sed -i 's/allow_anonymous false/allow_anonymous true/' services/broker/mosquitto.conf
+
+# 5. Restart broker
+docker compose down broker
+docker compose up broker -d
+
+# 6. Test MQTT connection
+mosquitto_pub -h localhost -p 1883 -t test -m "hello world"
+```
+
+### Issue 3: Docker Compose Version Warnings
+
+**Symptoms:**
+```bash
+docker compose ps
+# Shows: WARN[0000] /path/docker-compose.yml: the attribute `version` is obsolete
+```
+
+**Solution:**
+```bash
+# Remove the version line from docker compose files
+sed -i '/^version:/d' docker-compose.yml
+sed -i '/^version:/d' docker-compose.prod.yml
+```
+
+### Issue 4: Nginx Can't Find Upstream Services
+
+**Symptoms:**
+```bash
+docker compose logs nginx
+# Shows: nginx: [emerg] host not found in upstream "broker"
+```
+
+**Solution:**
+```bash
+# 1. Ensure all services start in correct order
+docker compose down
+docker compose up -d
+
+# 2. If broker is failing, fix broker first (see Issue 2)
+# 3. Then restart nginx after broker is running:
+docker compose up nginx -d
+```
+
+### Issue 5: Git Permission Errors During Updates
+
+**Symptoms:**
+```bash
+git pull origin dev
+# Shows: error: cannot open '.git/FETCH_HEAD': Permission denied
+```
+
+**Solution:**
+```bash
+# Fix git repository ownership
+sudo chown -R $USER:$USER /opt/iot-platform
+cd /opt/iot-platform
+git pull origin dev
+```
+
+### Issue 6: MQTT Password File Creation Fails
+
+**Symptoms:**
+```bash
+docker compose logs broker
+# Shows: Password: Error: Empty password.
+```
+
+**Solution:**
+```bash
+# 1. Install mosquitto-clients for password management
+sudo apt update && sudo apt install -y mosquitto mosquitto-clients
+
+# 2. Stop system mosquitto service (we use Docker version)
+sudo systemctl stop mosquitto
+sudo systemctl disable mosquitto
+
+# 3. Create password file manually
+cd /opt/iot-platform
+mkdir -p data/mosquitto
+mosquitto_passwd -c -b data/mosquitto/passwd devuser your-mqtt-password
+chmod 600 data/mosquitto/passwd
+
+# 4. Update docker-compose to mount the password file
+# Add this line to broker volumes in docker-compose.yml:
+# - ./data/mosquitto/passwd:/mosquitto/config/passwd
+
+# 5. Restart broker
+docker compose restart broker
+```
+
+### Issue 7: Services Not Accessible via Cloudflare
+
+**Symptoms:**
+- Local access works: `curl http://localhost:8080/health`
+- Cloudflare access fails: `https://demo.your-domain.com/health`
+
+**Diagnosis:**
+```bash
+# Check if cloudflared is running and connected
+sudo systemctl status cloudflared
+# Should show: Active: active (running)
+
+# Check tunnel connections
+sudo journalctl -u cloudflared -n 20
+# Should show: INF Registered tunnel connection
+```
+
+**Solution:**
+```bash
+# 1. Verify tunnel configuration
+sudo cat /etc/cloudflared/config.yml
+
+# 2. Test local service is accessible
+curl http://localhost:8080/health
+
+# 3. Check DNS propagation
+nslookup demo.your-domain.com
+# Should show Cloudflare IPs (104.x.x.x or 172.x.x.x)
+
+# 4. Check Cloudflare dashboard:
+# - Go to Zero Trust > Access > Tunnels
+# - Your tunnel should show "Healthy"
+# - Check if DNS records are created
+
+# 5. If tunnel shows unhealthy, restart it:
+sudo systemctl restart cloudflared
+```
+
+### Issue 8: Container Build Failures
+
+**Symptoms:**
+```bash
+docker compose up -d
+# Shows: failed to solve: failed to build
+```
+
+**Solution:**
+```bash
+# 1. Clean Docker cache
+docker system prune -a
+
+# 2. Rebuild with no cache
+docker compose build --no-cache
+
+# 3. Check disk space
+df -h
+# Ensure at least 2GB free space
+
+# 4. If still failing, build services individually:
+docker compose build db
+docker compose build api
+docker compose up -d
+```
+
+---
+
+## �🔧 Troubleshooting Commands
 
 ```bash
 # Check service logs
