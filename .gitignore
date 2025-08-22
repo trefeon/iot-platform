@@ -5,10 +5,11 @@
 .env.local
 .env.production
 
-# Database and data
-/data/*.db
-/data/*.sqlite
-/data/*.sqlite3
+# Database files
+data/
+*.db
+*.sqlite
+*.sqlite3
 
 # Docker
 docker-compose.override.yml
@@ -56,10 +57,10 @@ wheels/
 *.egg
 
 # Arduino IDE
-firmware/*.ino.hex
-firmware/*.ino.bin
-firmware/*.ino.elf
-firmware/*.ino.map
+firmware/*.hex
+firmware/*.bin
+firmware/*.elf
+firmware/*.map
 
 # Temporary files
 *.tmp
