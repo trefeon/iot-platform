@@ -543,11 +543,11 @@
             <div class="control-buttons">
                 <button class="btn btn-success" onclick="sendTestCommand('led_on')">
                     <i class="fas fa-lightbulb"></i>
-                    LED ON
+                    Enable LED Activity
                 </button>
                 <button class="btn btn-primary" onclick="sendTestCommand('led_off')">
                     <i class="fas fa-lightbulb"></i>
-                    LED OFF
+                    Disable LED
                 </button>
                 <button class="btn btn-primary" onclick="sendTestCommand('config_temp')">
                     <i class="fas fa-thermometer-half"></i>
@@ -745,13 +745,31 @@
         let latestDeviceData = {};
         let messageCount = 0;
 
+        // Helper function to count online devices
+        function getOnlineDeviceCount() {
+            return devicesList.filter(device => {
+                const deviceData = latestDeviceData[device.id];
+                if (deviceData && deviceData.timestamp) {
+                    const lastUpdate = new Date(deviceData.timestamp);
+                    const now = new Date();
+                    const timeDiff = (now - lastUpdate) / 1000;
+                    return timeDiff <= 30; // Online if data within 30 seconds
+                }
+                return false;
+            }).length;
+        }
+
         async function fetchDevices() {
             try {
                 const response = await fetch('/api/devices');
                 const devices = await response.json();
                 devicesList = devices;
                 updateDevicesList();
-                updateMqttStatus(true, `Connected - ${devices.length} device(s) found`);
+                
+                // Update status with online vs total count
+                const onlineCount = getOnlineDeviceCount();
+                const totalCount = devices.length;
+                updateMqttStatus(true, `Connected - ${onlineCount}/${totalCount} device(s) online`);
                 return devices;
             } catch (error) {
                 console.error('Error fetching devices:', error);
@@ -799,6 +817,14 @@
                     
                     latestDeviceData = deviceDataMap;
                     
+                    // Update device list to reflect new online status
+                    updateDevicesList();
+                    
+                    // Update connection status with current online count
+                    const onlineCount = getOnlineDeviceCount();
+                    const totalCount = devicesList.length;
+                    updateMqttStatus(true, `Connected - ${onlineCount}/${totalCount} device(s) online`);
+                    
                     // If we have data for esp32-01, use it
                     if (deviceDataMap['esp32-01']) {
                         const esp32Data = deviceDataMap['esp32-01'];
@@ -840,10 +866,22 @@
             devicesList.forEach(device => {
                 const deviceId = device.id;
                 const deviceName = device.name || device.id; // Use ID if name is null
-                const isOnline = latestDeviceData[deviceId];
-                const lastSeen = isOnline ? 
-                    new Date(latestDeviceData[deviceId].timestamp).toLocaleTimeString() : 
-                    'No recent data';
+                
+                // Check if device is online based on recent data (within last 30 seconds)
+                const deviceData = latestDeviceData[deviceId];
+                let isOnline = false;
+                let lastSeen = 'No recent data';
+                
+                if (deviceData && deviceData.timestamp) {
+                    const lastUpdate = new Date(deviceData.timestamp);
+                    const now = new Date();
+                    const timeDiff = (now - lastUpdate) / 1000; // seconds
+                    
+                    isOnline = timeDiff <= 30; // Consider online if data is within 30 seconds
+                    lastSeen = isOnline ? 
+                        lastUpdate.toLocaleTimeString() : 
+                        `Last seen: ${lastUpdate.toLocaleTimeString()}`;
+                }
                 
                 devicesListElement.innerHTML += `
                     <div class="device-item">
@@ -859,8 +897,8 @@
                 `;
             });
             
-            // Update device count
-            document.getElementById('deviceCount').textContent = devicesList.length;
+            // Update device count to show online devices
+            document.getElementById('deviceCount').textContent = getOnlineDeviceCount();
         }
 
         function updateChartsWithRealData(deviceData) {
@@ -977,8 +1015,8 @@
                     
                     // Visual feedback for LED commands
                     if (action === 'led_on' || action === 'led_off') {
-                        const ledStatus = action === 'led_on' ? 'ON' : 'OFF';
-                        addConsoleMessage(`ESP32-01: LED is now ${ledStatus}`);
+                        const ledStatus = action === 'led_on' ? 'Activity Enabled' : 'Disabled';
+                        addConsoleMessage(`ESP32-01: LED activity is now ${ledStatus}`);
                     }
                 } else {
                     const error = await response.text();
