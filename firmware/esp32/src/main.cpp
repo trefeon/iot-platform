@@ -33,6 +33,11 @@ const unsigned long ENVIRONMENTAL_INTERVAL = 10000; // 10 seconds
 const unsigned long MOTION_INTERVAL = 2000;       // 2 seconds
 const unsigned long POWER_INTERVAL = 30000;       // 30 seconds
 
+// LED activity indication
+bool ledState = false;
+unsigned long lastLedActivity = 0;
+const unsigned long LED_FLASH_DURATION = 100;     // 100ms flash duration
+
 WiFiClient espClient;
 PubSubClient mqtt(espClient);
 
@@ -47,6 +52,13 @@ float addDailyPattern(float baseValue, float amplitude) {
   unsigned long timeOfDay = (millis() / 1000) % 86400; // Seconds in day
   float pattern = sin(2 * PI * timeOfDay / 86400.0) * amplitude;
   return baseValue + pattern;
+}
+
+// Flash LED to indicate activity
+void flashActivityLED() {
+  digitalWrite(2, HIGH);
+  ledState = true;
+  lastLedActivity = millis();
 }
 
 // Simulate realistic environmental sensor data
@@ -90,6 +102,9 @@ void publishEnvironmentalData() {
   size_t len = serializeJson(doc, buffer);
   String topic = String("devices/") + DEVICE_ID + "/environmental";
   mqtt.publish(topic.c_str(), buffer, len, false);
+  
+  // Flash LED to indicate activity
+  flashActivityLED();
 }
 
 // Simulate motion/accelerometer data
@@ -118,6 +133,9 @@ void publishMotionData() {
   size_t len = serializeJson(doc, buffer);
   String topic = String("devices/") + DEVICE_ID + "/motion";
   mqtt.publish(topic.c_str(), buffer, len, false);
+  
+  // Flash LED to indicate activity
+  flashActivityLED();
 }
 
 // Simulate power and system data
@@ -146,6 +164,9 @@ void publishPowerData() {
   size_t len = serializeJson(doc, buffer);
   String topic = String("devices/") + DEVICE_ID + "/power";
   mqtt.publish(topic.c_str(), buffer, len, false);
+  
+  // Flash LED to indicate activity
+  flashActivityLED();
 }
 
 // Publish basic telemetry data
@@ -167,9 +188,15 @@ void publishTelemetryData() {
   size_t len = serializeJson(doc, buffer);
   String topic = String("devices/") + DEVICE_ID + "/telemetry";
   mqtt.publish(topic.c_str(), buffer, len, false);
+  
+  // Flash LED to indicate activity
+  flashActivityLED();
 }
 
 void onMqttMessage(char* topic, byte* payload, unsigned int length) {
+  // Flash LED to indicate incoming command
+  flashActivityLED();
+  
   // Enhanced command handler
   StaticJsonDocument<256> doc;
   DeserializationError err = deserializeJson(doc, payload, length);
@@ -178,7 +205,11 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
     
     if (strcmp(action, "led") == 0) {
       int val = doc["value"] | 0;
-      digitalWrite(2, val ? HIGH : LOW);
+      // Only control LED state when not flashing for activity
+      if (millis() - lastLedActivity > LED_FLASH_DURATION) {
+        digitalWrite(2, val ? HIGH : LOW);
+        ledState = val;
+      }
       
       // Send acknowledgment
       StaticJsonDocument<128> ack;
@@ -239,6 +270,9 @@ void mqttConnect() {
       String statusTopic = String("devices/") + DEVICE_ID + "/status";
       mqtt.publish(statusTopic.c_str(), buffer, len, true); // Retained message
       
+      // Flash LED to indicate connection
+      flashActivityLED();
+      
     } else {
       Serial.print(" failed, rc=");
       Serial.print(mqtt.state());
@@ -250,6 +284,7 @@ void mqttConnect() {
 
 void setup() {
   pinMode(2, OUTPUT);
+  digitalWrite(2, LOW); // Start with LED off
   Serial.begin(115200);
   Serial.println("\n=== ESP32 IoT Sensor Node ===");
   Serial.println("Device ID: " + String(DEVICE_ID));
@@ -258,10 +293,17 @@ void setup() {
   Serial.print("Connecting to WiFi");
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
+  
+  // Blink LED while connecting to WiFi
   while (WiFi.status() != WL_CONNECTED) { 
-    delay(500); 
+    digitalWrite(2, HIGH);
+    delay(250);
+    digitalWrite(2, LOW);
+    delay(250); 
     Serial.print(".");
   }
+  digitalWrite(2, LOW); // Ensure LED is off after connection
+  
   Serial.println("\nWiFi connected!");
   Serial.println("IP address: " + WiFi.localIP().toString());
   
@@ -278,6 +320,12 @@ void loop() {
     mqttConnect();
   }
   mqtt.loop();
+
+  // Handle LED activity flash duration
+  if (ledState && (millis() - lastLedActivity > LED_FLASH_DURATION)) {
+    digitalWrite(2, LOW);
+    ledState = false;
+  }
 
   unsigned long now = millis();
   
