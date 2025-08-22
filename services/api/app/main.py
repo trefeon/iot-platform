@@ -4,13 +4,18 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os, jwt, requests, logging
 from .routers import devices, telemetry
-from .mqtt_bus import publish_cmd
+from .mqtt_bus import publish_cmd, start_mqtt_subscriber
 
 # Cloudflare Access configuration
 CF_CERTS_URL = os.getenv("CF_ACCESS_CERTS", "")
 CF_AUD = os.getenv("CF_ACCESS_AUD", "")
 
 app = FastAPI(title="IoT Platform API")
+
+# Start MQTT subscriber on startup
+@app.on_event("startup")
+async def startup_event():
+    start_mqtt_subscriber()
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
