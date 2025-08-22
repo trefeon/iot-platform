@@ -6,13 +6,9 @@
 set -e
 
 ENVIRONMENT=${1:-dev}
-REPO_URL="https://github.com/trefeon/iot-platform.git"
+REPO_URL="https://github.com/your-user/iot-platform.git"
 PROJECT_DIR="/opt/iot-platform"
-BRANCH="dev"
-
-if [ "$ENVIRONMENT" = "prod" ]; then
-    BRANCH="main"
-fi
+BRANCH="main"
 
 echo "Deploying IoT Platform - Environment: $ENVIRONMENT, Branch: $BRANCH"
 
@@ -44,7 +40,8 @@ fi
 # Create MQTT password file if it doesn't exist
 if [ ! -f "services/broker/passwd" ]; then
     echo "Creating MQTT password file..."
-    sudo docker run --rm -v $(pwd)/services/broker:/mosquitto/config eclipse-mosquitto:2 mosquitto_passwd -c /mosquitto/config/passwd devuser
+    echo "Creating MQTT password file (you will be prompted to set a password for 'devuser')..."
+    sudo docker run --rm -v $(pwd)/services/broker:/mosquitto/config -it eclipse-mosquitto:2 mosquitto_passwd -c /mosquitto/config/passwd devuser
 fi
 
 # Set proper permissions

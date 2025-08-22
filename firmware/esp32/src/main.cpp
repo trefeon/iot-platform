@@ -6,10 +6,10 @@
 // TODO: Update these with your actual WiFi credentials
 const char* WIFI_SSID = "YOUR_WIFI_NETWORK_NAME";     // Replace with your WiFi network name
 const char* WIFI_PASS = "YOUR_WIFI_PASSWORD";         // Replace with your WiFi password
-const char* MQTT_HOST = "192.168.123.7"; // Your server's IP address
+const char* MQTT_HOST = "192.168.1.100"; // Your server's IP or mqtt.your-domain.com
 const int   MQTT_PORT = 1883;
 const char* MQTT_USER = "devuser";
-const char* MQTT_PASS = "abi12345";      // Updated to match your .env
+const char* MQTT_PASS = "devpass";      // Match your .env / broker passwd
 const char* DEVICE_ID = "esp32-01";     // unique per device
 
 // Sensor simulation variables

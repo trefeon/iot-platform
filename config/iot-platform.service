@@ -8,8 +8,8 @@ After=network-online.target
 [Service]
 Type=forking
 RemainAfterExit=yes
-User=iotuser
-Group=iotuser
+User=youruser
+Group=youruser
 WorkingDirectory=/opt/iot-platform
 ExecStart=/bin/bash -c 'cd /opt/iot-platform && /usr/bin/docker compose up -d'
 ExecStop=/bin/bash -c 'cd /opt/iot-platform && /usr/bin/docker compose down'

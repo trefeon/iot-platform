@@ -1,21 +1,23 @@
-tunnel: iot-demo
-credentials-file: /etc/cloudflared/iot-demo.json
+# Template Cloudflare Tunnel config
+# Replace tunnel name and credentials file for your setup
+tunnel: iot-platform
+credentials-file: /etc/cloudflared/iot-platform.json
 
 ingress:
   # Public demo dashboard
-  - hostname: demo.yourdomain.com
+  - hostname: demo.your-domain.com
     service: http://localhost:8080
   
   # Access-protected control panel
-  - hostname: control.yourdomain.com
+  - hostname: control.your-domain.com
     service: http://localhost:8080
   
   # Access-protected MQTT WebSocket endpoint
-  - hostname: mqtt.yourdomain.com
+  - hostname: mqtt.your-domain.com
     service: http://localhost:8080
   
   # Admin interface (optional)
-  - hostname: admin.yourdomain.com
+  - hostname: admin.your-domain.com
     service: http://localhost:8080
   
   # Catch-all

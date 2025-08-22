@@ -65,6 +65,9 @@ deploy/certs/*.crt
 deploy/certs/*.key
 deploy/certs/*.pem
 
+# Cloudflared credentials (store outside repo)
+deploy/cloudflare/*.json
+
 # Database dumps
 *.sql.gz
 *.dump
