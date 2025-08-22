@@ -35,6 +35,8 @@ const unsigned long POWER_INTERVAL = 30000;       // 30 seconds
 
 // LED activity indication
 bool ledState = false;
+bool manualLedControl = false;  // Track if LED is under manual control
+int manualLedState = 0;         // Manual LED state (0=off, 1=on)
 unsigned long lastLedActivity = 0;
 const unsigned long LED_FLASH_DURATION = 100;     // 100ms flash duration
 
@@ -54,11 +56,13 @@ float addDailyPattern(float baseValue, float amplitude) {
   return baseValue + pattern;
 }
 
-// Flash LED to indicate activity
+// Flash LED to indicate activity (only if not under manual control)
 void flashActivityLED() {
-  digitalWrite(2, HIGH);
-  ledState = true;
-  lastLedActivity = millis();
+  if (!manualLedControl) {
+    digitalWrite(2, HIGH);
+    ledState = true;
+    lastLedActivity = millis();
+  }
 }
 
 // Simulate realistic environmental sensor data
@@ -205,10 +209,17 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
     
     if (strcmp(action, "led") == 0) {
       int val = doc["value"] | 0;
-      // Only control LED state when not flashing for activity
-      if (millis() - lastLedActivity > LED_FLASH_DURATION) {
-        digitalWrite(2, val ? HIGH : LOW);
-        ledState = val;
+      
+      // Set manual LED control mode
+      manualLedControl = true;
+      manualLedState = val;
+      
+      // Immediately set LED state
+      digitalWrite(2, val ? HIGH : LOW);
+      
+      // If turning LED off, ensure ledState is also false to prevent activity flash
+      if (val == 0) {
+        ledState = false;
       }
       
       // Send acknowledgment
@@ -226,6 +237,10 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
       baseTemperature = 22.5;
       baseHumidity = 55.0;
       basePressure = 1013.25;
+      
+      // Reset LED to automatic mode
+      manualLedControl = false;
+      manualLedState = 0;
       
       JsonDocument ack;
       ack["status"] = "reset_complete";
@@ -336,10 +351,15 @@ void loop() {
   }
   mqtt.loop();
 
-  // Handle LED activity flash duration
-  if (ledState && (millis() - lastLedActivity > LED_FLASH_DURATION)) {
+  // Handle LED activity flash duration (only if not under manual control)
+  if (!manualLedControl && ledState && (millis() - lastLedActivity > LED_FLASH_DURATION)) {
     digitalWrite(2, LOW);
     ledState = false;
+  }
+  
+  // If under manual control, maintain the manual LED state
+  if (manualLedControl) {
+    digitalWrite(2, manualLedState ? HIGH : LOW);
   }
 
   unsigned long now = millis();
