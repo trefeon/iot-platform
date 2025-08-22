@@ -762,16 +762,38 @@
 
         async function fetchLatestTelemetry() {
             try {
-                const response = await fetch('/api/telemetry/latest?limit=50');
+                const response = await fetch('/api/telemetry/latest');
                 const telemetryData = await response.json();
                 
                 if (telemetryData && telemetryData.length > 0) {
-                    // Group by device_id and get latest readings
+                    // Group by device_id and combine latest readings of each type
                     const deviceDataMap = {};
                     telemetryData.forEach(record => {
                         const deviceId = record.device_id;
-                        if (!deviceDataMap[deviceId] || new Date(record.timestamp) > new Date(deviceDataMap[deviceId].timestamp)) {
-                            deviceDataMap[deviceId] = record;
+                        const topicType = record.payload.topic_type;
+                        
+                        if (!deviceDataMap[deviceId]) {
+                            deviceDataMap[deviceId] = {
+                                device_id: deviceId,
+                                timestamp: record.timestamp,
+                                payload: {}
+                            };
+                        }
+                        
+                        // Merge payloads from different topic types, keeping the latest for each type
+                        if (!deviceDataMap[deviceId].topicTimestamps) {
+                            deviceDataMap[deviceId].topicTimestamps = {};
+                        }
+                        
+                        if (!deviceDataMap[deviceId].topicTimestamps[topicType] || 
+                            new Date(record.timestamp) > new Date(deviceDataMap[deviceId].topicTimestamps[topicType])) {
+                            deviceDataMap[deviceId].topicTimestamps[topicType] = record.timestamp;
+                            // Merge this topic's data into the combined payload
+                            Object.assign(deviceDataMap[deviceId].payload, record.payload);
+                            // Update overall timestamp to the latest
+                            if (new Date(record.timestamp) > new Date(deviceDataMap[deviceId].timestamp)) {
+                                deviceDataMap[deviceId].timestamp = record.timestamp;
+                            }
                         }
                     });
                     
@@ -782,7 +804,7 @@
                         const esp32Data = deviceDataMap['esp32-01'];
                         updateChartsWithRealData(esp32Data);
                         updateDisplaysWithRealData(esp32Data);
-                        addConsoleMessage(`ESP32-01: Real data updated - ${Object.keys(esp32Data.data || {}).length} sensors`);
+                        addConsoleMessage(`ESP32-01: Real data updated - ${Object.keys(esp32Data.payload || {}).length} sensors`);
                         messageCount++;
                         document.getElementById('messageCount').textContent = messageCount.toLocaleString();
                     }
@@ -841,7 +863,7 @@
 
         function updateChartsWithRealData(deviceData) {
             const now = new Date().toLocaleTimeString();
-            const data = deviceData.data || {};
+            const data = deviceData.payload || {};
             
             // Update environmental chart
             if (chart.data.labels.length > 20) {
@@ -868,7 +890,7 @@
         }
 
         function updateDisplaysWithRealData(deviceData) {
-            const data = deviceData.data || {};
+            const data = deviceData.payload || {};
             
             // Update stat cards
             document.getElementById('avgTemp').textContent = `${(data.temperature || 0).toFixed(1)}°C`;
