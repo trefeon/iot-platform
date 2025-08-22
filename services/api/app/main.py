@@ -96,9 +96,17 @@ def mqtt_test():
     return FileResponse("app/static/mqtt-test.html")
 
 @app.get("/")
-def root():
-    """Serve the demo dashboard"""
-    return FileResponse("app/static/index.html")
+def root(request: Request):
+    """Serve appropriate interface based on hostname"""
+    host = request.headers.get("host", "")
+    
+    if host.startswith("control."):
+        return FileResponse("app/static/control.html")
+    elif host.startswith("admin."):
+        return FileResponse("app/static/admin.html")
+    else:
+        # Default to demo dashboard for demo.* and localhost
+        return FileResponse("app/static/index.html")
 
 @app.get("/health")
 def health():
