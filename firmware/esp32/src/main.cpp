@@ -247,6 +247,21 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
       String ackTopic = String("devices/") + DEVICE_ID + "/status";
       mqtt.publish(ackTopic.c_str(), (uint8_t*)ackBuffer, ackLen, false);
     }
+    else if (strcmp(action, "restart") == 0) {
+      // Send acknowledgment before restarting
+      JsonDocument ack;
+      ack["status"] = "restarting";
+      char ackBuffer[128];
+      size_t ackLen = serializeJson(ack, ackBuffer);
+      String ackTopic = String("devices/") + DEVICE_ID + "/status";
+      mqtt.publish(ackTopic.c_str(), (uint8_t*)ackBuffer, ackLen, false);
+      
+      // Allow time for message to be sent
+      delay(100);
+      
+      // Restart the ESP32
+      ESP.restart();
+    }
   }
 }
 
