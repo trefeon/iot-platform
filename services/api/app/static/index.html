@@ -838,9 +838,11 @@
             }
             
             devicesList.forEach(device => {
-                const isOnline = latestDeviceData[device.name];
+                const deviceId = device.id;
+                const deviceName = device.name || device.id; // Use ID if name is null
+                const isOnline = latestDeviceData[deviceId];
                 const lastSeen = isOnline ? 
-                    new Date(latestDeviceData[device.name].timestamp).toLocaleTimeString() : 
+                    new Date(latestDeviceData[deviceId].timestamp).toLocaleTimeString() : 
                     'No recent data';
                 
                 devicesListElement.innerHTML += `
@@ -848,7 +850,7 @@
                         <div class="device-info">
                             <div class="device-status ${isOnline ? 'online' : 'offline'}"></div>
                             <div>
-                                <div class="device-name">${device.name}</div>
+                                <div class="device-name">${deviceName}</div>
                                 <div class="device-last-seen">${lastSeen}</div>
                             </div>
                         </div>
